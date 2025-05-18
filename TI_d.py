@@ -1,0 +1,29270 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Sep  28 09:01:02 2024
+
+@author: Mamoona Ghafoor
+"""
+
+import numpy as np
+#Insertion in Tree edit distance
+
+# parameters
+eps = 1e-7
+# C = 1e6
+# B = 1e4
+C = 1e5
+B = 1e3
+# Input
+d = 4
+m = 5
+t = [3, 2, 2+m, 2, 4, 4+m, 2+m, 4, 4+m, 3+m]
+n = len(t)//2
+# where Input Euler string E(T)=t
+
+# First layer is input layer, Given as
+x = [1, 0, 3, 0, 2, 4, 1, 1, 3, 2, 5, 1, 4, 1, 3, 5]
+#(first portion shows the nodes where insertion is required, 
+# the second portion is the number of the child from where subsequence starts, 
+# the third portion is the number of the child from where subsequence ends, 
+# the fourth portion contains the labels of newly inserted nodes).
+
+X = x  
+print("Input:")
+print("d:", d)
+print("m:", m)
+print("t:", t)
+print("x:", X)
+
+# To construct weight matrix for second layer/first hidden layer is L1=W1*X+B1
+W1 = []
+
+for l in range(1, 2*n+1):  # (eta 1, 2 nodes)
+    for q in range(2):
+        temp_row = []
+        for j in range(1, 4*d+1):
+            w = 0
+            temp_row.append(w)
+        W1.append(temp_row)
+        
+############
+for k in range(1, 4*d+1):  # (x_j as identity map)
+    temp_row = []
+    for j in range(1, 4*d+1):
+        w = 0
+        if k == j:
+            w = 1
+        temp_row.append(w)
+    W1.append(temp_row)
+# #####
+# for i in W1:
+#       print(i)
+
+# Bias matrix for second layer/first hidden layer
+
+B1 = []
+
+# bias matrix for eta 1,2 nodes
+
+for i in range(1, 2*n+1):
+    for q in range(2):
+        temp_row = []
+        for j in range(1):
+            b = 0
+            if q == 0:
+                b = ((m-t[i-1]) / eps)+1
+            else:
+                b = (m-t[i-1]) / eps
+            temp_row.append(b)
+        B1.append(temp_row)
+
+############
+
+for k in range(1, 4*d+1):
+    temp_row = []
+    for j in range(1):
+        b = 0
+        temp_row.append(b)
+    B1.append(temp_row)
+# for i in B1:
+#     print(i)
+##################################
+
+L1 = []  # eta nodes
+for i in range(len(W1)):
+    temp_row = []
+    L1_i_entry = np.maximum((np.dot(W1[i], X)+B1[i]), 0)
+    L1.append(L1_i_entry)
+    # print('this is index i:', i)
+    # print('this is the value L1[i]:', L1_i_entry)
+# print('Printing eta nodes of second layer/first hidden layer')
+# for i in L1:
+#     print(i)
+##########################
+# To construct weight matrix for third layer/second hidden layer is L2=W2*L1+B2
+W2 = []
+
+# (for gamma1 nodes)
+A1 = []
+for l in range(1, 2*n+1):
+    temp_row = []
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            w = 0
+            if i <= l:
+                if q == 0:
+                    w = 1
+                else:  # q = 1
+                    w = -1
+            temp_row.append(w)
+    A1.append(temp_row)
+#####
+A2 = []
+for i in range(1, 2*n+1):
+    temp_row = []
+    for j in range(1, 4*d+1):
+        w = 0
+        temp_row.append(w)
+    A2.append(temp_row)
+##########
+for i in range(len(A1)):
+    concatenated_row = A1[i] + A2[i]
+    W2.append(concatenated_row)
+#########
+# (for alpha 11, alpha 12 nodes)
+A3 = []
+for i in range(1, 2*n+1):
+    for p in range(2):
+        temp_row = []
+        for l in range(1, 2*n+1):
+            for q in range(2):
+                w = 0
+                if i == l:
+                    if q == 0:
+                        w = 1 / eps
+                    else:  # q = 1
+                        w = -1 / eps
+                temp_row.append(w)
+        A3.append(temp_row)
+# ##########
+A4 = []
+for i in range(1, 2*n+1):
+    for p in range(2):
+        temp_row = []
+        for j in range(1, 4*d+1):  # (x nodes)
+                w = 0
+                temp_row.append(w)
+        A4.append(temp_row)
+##########
+for i in range(len(A3)):
+    concatenated_row = A3[i] + A4[i]
+    W2.append(concatenated_row)
+##############
+# (for beta 11, beta 12 nodes)
+A5 = []
+for i in range(1, 2*n+1):
+    for p in range(2):
+        temp_row = []
+        for l in range(1, 2*n+1):
+            for q in range(2):
+                w = 0
+                if i == l:
+                    if q == 0:
+                        w = -1 / eps
+                    else:  # q = 1
+                        w = 1 / eps
+                temp_row.append(w)
+        A5.append(temp_row)
+# ##########
+A6 = []
+for i in range(1, 2*n+1):
+    for p in range(2):
+        temp_row = []
+        for j in range(1, 4*d+1):  # (x nodes)
+                w = 0
+                temp_row.append(w)
+        A6.append(temp_row)
+##########
+for i in range(len(A5)):
+    concatenated_row = A5[i]  + A6[i]
+    W2.append(concatenated_row)
+##############
+# (for Tau1 nodes)
+A7 = []
+for l in range(1, 2*n+1):
+    temp_row = []
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            w = 0
+            if i == l:
+                if q == 0:
+                    w = t[l-1]
+                else:  # q = 1
+                    w = -t[l-1]
+            temp_row.append(w)
+    A7.append(temp_row)
+###########   
+A8 = []
+for i in range(1, 2*n+1):
+    temp_row = []
+    for j in range(1, 4*d+1):
+        w = 0
+        temp_row.append(w)
+    A8.append(temp_row)    
+##########
+for i in range(len(A7)):
+    concatenated_row = A7[i] + A8[i]
+    W2.append(concatenated_row)
+##############
+# (for Gamma1 nodes)
+A9 = []
+for l in range(1, 2*n+1):
+    temp_row = []
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            w = 0
+            if i == l:
+                if q == 0:
+                    w = -t[l-1]
+                else:  # q = 1
+                    w = t[l-1]
+            temp_row.append(w)
+    A9.append(temp_row)
+##########
+A10 = []
+for i in range(1, 2*n+1):
+    temp_row = []
+    for j in range(1, 4*d+1):
+        w = 0
+        temp_row.append(w)
+    A10.append(temp_row)
+#####
+for i in range(len(A9)):
+    concatenated_row = A9[i]  + A10[i]
+    W2.append(concatenated_row)
+# print("weight matrix for third layer/second hidden layer")
+# print(W2)
+##############
+# (for x nodes)
+A11 = []
+for l in range(1, 4*d+1):
+    temp_row = []
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            w = 0
+            temp_row.append(w)
+    A11.append(temp_row)
+##########
+A12 = []
+for i in range(1, 4*d+1):
+    temp_row = []
+    for j in range(1, 4*d+1):
+        w = 0
+        if i==j:
+            w=1
+        temp_row.append(w)
+    A12.append(temp_row)
+#####
+for i in range(len(A11)):
+    concatenated_row = A11[i]  + A12[i]
+    W2.append(concatenated_row)
+# print("weight matrix for third layer/second hidden layer")
+# print(W2)
+#######################
+# Bias matrix for third layer/second hidden layer
+
+B2 = []
+
+# bias matrix for gamma1 nodes
+
+for i in range(1, 2*n+1):
+    temp_row = []
+    for j in range(1):
+        b = 0
+        temp_row.append(b)
+    B2.append(temp_row)
+    
+# bias matrix for alpha 11,12 nodes
+
+for i in range(1, 2*n+1):
+    for q in range(2):
+        temp_row = []
+        for j in range(1):
+            b = 0
+            if q == 0:
+                b = 1
+            temp_row.append(b)
+        B2.append(temp_row)
+
+# bias matrix for beta 11,12 nodes
+
+for i in range(1, 2*n+1):
+    for q in range(2):
+        temp_row = []
+        for j in range(1):
+            b = 0
+            if q == 0:
+                b = 1
+            temp_row.append(b)
+        B2.append(temp_row)    
+
+# bias matrix for Tau1 nodes
+
+for i in range(1, 2*n+1):
+    temp_row = []
+    for j in range(1):
+        b = 0
+        temp_row.append(b)
+    B2.append(temp_row)
+
+# bias matrix for Gamma 1 nodes
+
+for i in range(1, 2*n+1):
+    temp_row = []
+    for j in range(1):
+        b = t[i-1]
+        temp_row.append(b)
+    B2.append(temp_row)
+    
+# bias matrix for x_j
+
+for k in range(1, 4*d+1):
+    temp_row = []
+    for j in range(1):
+        b = 0
+        temp_row.append(b)
+    B2.append(temp_row)    
+# for i in B2:
+#     print(i)
+##################################
+L2 = []  # gamma, alpha11,12, beta11,12, tau1, Gamma1 nodes
+for i in range(len(W2)):
+    temp_row = []
+    L2_i_entry = np.maximum((np.dot(W2[i], L1)+B2[i]), 0)
+    L2.append(L2_i_entry)
+    # print('this is index i:', i)
+    # print('this is the value L2[i]:', L2_i_entry)
+##################
+# print('Printing gamma1, alpha11,12, beta11,12, tau1, Gamma1, gamma prime nodes nodes for third layer/second hidden layer')
+# for i in L2:
+#     print(i)
+###################
+# To construct weight matrix for fourth layer/third hidden layer is L3=W3*L2+B3
+W3 = []
+# (for gamma2)
+D1 = []
+for k in range(1, 2*n+1):
+    temp_row = []
+    for i in range(1, 2*n+1):  # gamma1
+        w = 0
+        if k == i:
+            w = 1
+        temp_row.append(w)
+    D1.append(temp_row)
+    
+##########
+D2 = []
+for k in range(1, 2*n+1):
+    temp_row = []
+    for i in range(1, 2*n+1):  # alpha11,12
+        for q in range(2):
+            w = 0
+            if k == i:
+                if q == 0:
+                    w = -C
+                else:
+                    w = C
+            temp_row.append(w)
+    D2.append(temp_row)
+##########
+D3 = []
+for k in range(1, 2*n+1):
+    temp_row = []
+    for i in range(1, 2*n+1):  # beta11,12
+        for q in range(2):
+            w = 0
+            if k == i:
+                if q == 0:
+                    w = -C
+                else:
+                    w = C
+            temp_row.append(w)
+    D3.append(temp_row)
+########
+    
+D4 = []
+for k in range(1, 2*n+1):
+    temp_row = []
+    for i in range(1, 2*n+1):  # Tau1
+        w = 0
+        temp_row.append(w)
+    D4.append(temp_row)
+##########
+D5 = []
+for k in range(1, 2*n+1):
+    temp_row = []
+    for i in range(1, 2*n+1):  # Gamma1
+        w = 0
+        temp_row.append(w)
+    D5.append(temp_row)
+##########
+D7 = []
+for k in range(1, 2*n+1):
+    temp_row = []
+    for i in range(1, 4*d+1):  # x_j
+        w = 0
+        temp_row.append(w)
+    D7.append(temp_row)
+##########
+for i in range(len(D1)):
+    concatenated_row = D1[i] + D2[i] + D3[i] + D4[i] + D5[i] + D7[i]
+    W3.append(concatenated_row)
+#######################
+# (for mu11,12)
+##########
+D8 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, 2*n+1):  # gamma1
+                w = 0
+                temp_row.append(w)
+            D8.append(temp_row)
+#####
+D9 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, 2*n+1):  # alpha11,12
+                for p in range(2):
+                    w = 0
+                    temp_row.append(w)
+            D9.append(temp_row)
+##########
+D10 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for i in range(1, 2*n+1):  # beta11,12
+                for p in range(2):
+                    w = 0
+                    temp_row.append(w)
+            D10.append(temp_row)
+##########
+D11 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, 2*n+1):  # Tau1
+                w = 0
+                if k == l:
+                    w = -1/eps
+                temp_row.append(w)
+            D11.append(temp_row)
+##########
+D12 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, 2*n+1):  # Gamma1
+                w = 0
+                if k == i:
+                    w = 1/eps
+                temp_row.append(w)
+            D12.append(temp_row)
+##########
+D14 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for j in range(1, 4*d+1):  # x_j nodes
+                w = 0
+                temp_row.append(w)
+            D14.append(temp_row)            
+for i in range(len(D8)):
+    concatenated_row = D8[i] + D9[i] + D10[i] + D11[i] + D12[i]  + D14[i]
+    W3.append(concatenated_row)
+#######################
+# (for lambda11,12)
+##########
+D15 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, 2*n+1):  # gamma1
+                w = 0
+                temp_row.append(w)
+            D15.append(temp_row)
+#####
+D16 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, 2*n+1):  # alpha11,12
+                for p in range(2):
+                    w = 0
+                    temp_row.append(w)
+            D16.append(temp_row)
+##########
+D17 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for i in range(1, 2*n+1):  # beta11,12
+                for p in range(2):
+                    w = 0
+                    temp_row.append(w)
+            D17.append(temp_row)
+##########
+D18 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, 2*n+1):  # Tau1
+                w = 0
+                if k == l:
+                    w = 1/eps
+                temp_row.append(w)
+            D18.append(temp_row)
+##########
+D19 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, 2*n+1):  # Gamma1
+                w = 0
+                if k == i:
+                    w = -1/eps
+                temp_row.append(w)
+            D19.append(temp_row)
+##########
+D21 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for j in range(1, 4*d+1):  # x_j nodes
+                w = 0
+                temp_row.append(w)
+            D21.append(temp_row)            
+for i in range(len(D15)):
+    concatenated_row = D15[i] + D16[i] + D17[i] + D18[i] + D19[i]  + D21[i]
+    W3.append(concatenated_row)
+# #######################
+# for mu nodes(to calculate H(s_j -1))
+##########
+V15 = []
+for l in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, 2*n+1):  # gamma1
+                w = 0
+                temp_row.append(w)
+            V15.append(temp_row)
+#####
+V16 = []
+for l in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, 2*n+1):  # alpha11,12
+                for p in range(2):
+                    w = 0
+                    temp_row.append(w)
+            V16.append(temp_row)
+##########
+V17 = []
+for l in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for i in range(1, 2*n+1):  # beta11,12
+                for p in range(2):
+                    w = 0
+                    temp_row.append(w)
+            V17.append(temp_row)
+##########
+V18 = []
+for l in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, 2*n+1):  # Tau1
+                w = 0
+                temp_row.append(w)
+            V18.append(temp_row)
+##########
+V19 = []
+for l in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, 2*n+1):  # Gamma1
+                w = 0
+                if k == l:
+                    w = 1/eps
+                temp_row.append(w)
+            V19.append(temp_row)
+##########
+V21 = []
+for l in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for j in range(1, 4*d+1):  # x_j nodes
+                w = 0
+                temp_row.append(w)
+            V21.append(temp_row)            
+for i in range(len(V15)):
+    concatenated_row = V15[i] + V16[i] + V17[i] + V18[i] + V19[i]  + V21[i]
+    W3.append(concatenated_row)
+# #######################
+# for lambda nodes(to calculate H(r_j -1))
+##########
+V1 = []
+for l in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, 2*n+1):  # gamma1
+                w = 0
+                temp_row.append(w)
+            V1.append(temp_row)
+#####
+V2 = []
+for l in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, 2*n+1):  # alpha11,12
+                for p in range(2):
+                    w = 0
+                    temp_row.append(w)
+            V2.append(temp_row)
+##########
+V3 = []
+for l in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for i in range(1, 2*n+1):  # beta11,12
+                for p in range(2):
+                    w = 0
+                    temp_row.append(w)
+            V3.append(temp_row)
+##########
+V4 = []
+for l in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, 2*n+1):  # Tau1
+                w = 0
+                if k == l:
+                    w = 1/eps
+                temp_row.append(w)
+            V4.append(temp_row)
+##########
+V5 = []
+for l in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, 2*n+1):  # Gamma1
+                w = 0
+                temp_row.append(w)
+            V5.append(temp_row)
+##########
+V6 = []
+for l in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for j in range(1, 4*d+1):  # x_j nodes
+                w = 0
+                temp_row.append(w)
+            V6.append(temp_row)            
+for i in range(len(V1)):
+    concatenated_row = V1[i] + V2[i] + V3[i] + V4[i] + V5[i]  + V6[i]
+    W3.append(concatenated_row)
+# #######################
+# x_j nodes
+D36 = []
+for l in range(1, 4*d+1):
+            temp_row = []
+            for k in range(1, 2*n+1):  # gamma1
+                w = 0
+                temp_row.append(w)
+            D36.append(temp_row)
+#####
+D37 = []
+for l in range(1, 4*d+1):
+            temp_row = []
+            for k in range(1, 2*n+1):  # alpha11,12
+                for p in range(2):
+                    w = 0
+                    temp_row.append(w)
+            D37.append(temp_row)
+##########
+D38 = []
+for l in range(1, 4*d+1):
+            temp_row = []
+            for i in range(1, 2*n+1):  # beta11,12
+                for p in range(2):
+                    w = 0
+                    temp_row.append(w)
+            D38.append(temp_row)
+##########
+D39 = []
+for l in range(1, 4*d+1):
+            temp_row = []
+            for k in range(1, 2*n+1):  # Tau1
+                w = 0
+                temp_row.append(w)
+            D39.append(temp_row)
+##########
+D40 = []
+for l in range(1, 4*d+1):
+            temp_row = []
+            for k in range(1, 2*n+1):  # Gamma1
+                w = 0
+                temp_row.append(w)
+            D40.append(temp_row)
+##########
+D42 = []
+for l in range(1, 4*d+1):
+            temp_row = []
+            for j in range(1, 4*d+1):  # x_j nodes
+                w = 0
+                if l==j:
+                    w=1
+                temp_row.append(w)
+            D42.append(temp_row)            
+for i in range(len(D36)):
+    concatenated_row = D36[i] + D37[i] + D38[i] + D39[i] + D40[i]  + D42[i]
+    W3.append(concatenated_row)
+#####################
+# Bias matrix for fourth layer/third hidden layer
+
+B3 = []
+
+# bias matrix for gamma2 nodes
+
+for i in range(1, 2*n+1):
+    temp_row = []
+    for j in range(1):
+        b = C
+        temp_row.append(b)
+    B3.append(temp_row)   
+
+# bias matrix for mu 11,12 nodes
+
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for j in range(1):
+                b = 0
+                if q == 0:
+                    b = (-m/eps)+1
+                else:
+                    b = -m/eps
+                temp_row.append(b)
+            B3.append(temp_row)
+ 
+# bias matrix for lambda 11,12 nodes
+
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for j in range(1):
+                b = 0
+                if q == 0:
+                    b = (m/eps)+1
+                else:
+                    b = m/eps
+                temp_row.append(b)
+            B3.append(temp_row)            
+# bias matrix for mu and mu prime nodes
+
+for i in range(1, 2*n+1):
+    for q in range(2):
+      temp_row = []
+      for j in range(1):
+         b = 0
+         if q==0:
+            b=1-(1/eps)
+         else:
+            b=-(1/eps)
+         temp_row.append(b)
+      B3.append(temp_row)
+
+# bias matrix for lambda and lambda prime nodes
+
+for i in range(1, 2*n+1):
+    for q in range(2):
+      temp_row = []
+      for j in range(1):
+        b = 0
+        if q==0:
+            b=1-(1/eps)
+        else:
+            b=-(1/eps)
+        temp_row.append(b)
+      B3.append(temp_row)
+           
+# bias matrix for x_j
+
+for k in range(1, 4*d+1):
+    temp_row = []
+    for j in range(1):
+        b = 0
+        temp_row.append(b)
+    B3.append(temp_row)
+   
+# for i in B3:
+#     print(i)
+##################################
+L3 = []  # gamma2 , mu11,12, lambda11,12 nodes
+for i in range(len(W3)):
+    temp_row = []
+    L3_i_entry = np.maximum((np.dot(W3[i], L2)+B3[i]), 0)
+    L3.append(L3_i_entry)
+    # print('this is index i:', i)
+    # print('this is the value L3[i]:', L3_i_entry)
+###################
+# print('Printing gamma2 , mu11,12, lambda11,12 for fourth layer/third hidden layer')
+# for i in L3:
+#     print(i)
+###################
+# To construct weight matrix for fifth layer/fouth hidden layer is L4=W4*L3+B4
+W4 = []
+# gamma 2 as identity map
+D43 = []
+for l in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1, 2*n+1): # gamma 2
+            w = 0
+            if l==k:
+                w=1
+            temp_row.append(w)
+        D43.append(temp_row)
+
+##########
+D44 = []
+for l in range(1, 2*n+1):
+        temp_row = []
+        for i in range(1, 2*n+1):# mu 11,12
+            for k in range(1, 2*n+1):
+               for q in range(2):
+                 w = 0
+                 temp_row.append(w)
+        D44.append(temp_row)
+##########
+D45 = []
+for l in range(1, 2*n+1):
+        temp_row = []
+        for i in range(1, 2*n+1):# lambda11,12
+            for k in range(1, 2*n+1):
+               for q in range(2):
+                 w = 0
+                 temp_row.append(w)
+        D45.append(temp_row)
+##########
+V22 = []
+for j in range(1, 2*n+1):
+            temp_row = []
+            for l in range(1, 2*n+1):# mu and mu' nodes
+              for q in range(2):
+                 w = 0
+                 temp_row.append(w)
+            V22.append(temp_row)
+##########
+V23 = []
+for j in range(1, 2*n+1):
+            temp_row = []
+            for l in range(1, 2*n+1):# lambda and lambda' nodes
+              for q in range(2):
+                 w = 0
+                 temp_row.append(w)
+            V23.append(temp_row)
+##########
+D46 = []
+for l in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1, 4*d+1):
+            w = 0
+            temp_row.append(w)
+        D46.append(temp_row)
+##########
+for i in range(len(D43)):
+    concatenated_row = D43[i] + D44[i] + D45[i]+V22[i] + V23[i]+ D46[i]
+    W4.append(concatenated_row)    
+################## 
+# mu 21,22
+D49 = []
+for i in range(1, 2*n+1):
+    for q in range(2):
+        temp_row = []
+        for k in range(1, 2*n+1): # gamma 2
+            w = 0
+            if i==k:
+                w=1/eps
+            temp_row.append(w)
+        D49.append(temp_row)
+
+##########
+D50 = []
+for i in range(1, 2*n+1):
+    for q in range(2):
+        temp_row = []
+        for l in range(1, 2*n+1):# mu 11,12
+            for k in range(1, 2*n+1):
+               for p in range(2):
+                 w = 0
+                 temp_row.append(w)
+        D50.append(temp_row)
+##########
+D51 = []
+for i in range(1, 2*n+1):
+    for q in range(2):
+        temp_row = []
+        for l in range(1, 2*n+1):# lambda11,12
+            for k in range(1, 2*n+1):
+               for p in range(2):
+                 w = 0
+                 temp_row.append(w)
+        D51.append(temp_row)
+##########
+##########
+V25 = []
+for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for l in range(1, 2*n+1):# mu and mu prime
+              for p in range(2):
+                w = 0
+                temp_row.append(w)
+            V25.append(temp_row)
+##########
+V26 = []
+for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for l in range(1, 2*n+1):# lambda and lambda prime
+              for p in range(2):
+                w = 0
+                temp_row.append(w)
+            V26.append(temp_row)
+##########
+D52 = []
+for i in range(1, 2*n+1):
+    for q in range(2):
+        temp_row = []
+        for k in range(1, 4*d+1):
+            w = 0
+            temp_row.append(w)
+        D52.append(temp_row)
+##########
+for i in range(len(D49)):
+    concatenated_row = D49[i] + D50[i] + D51[i]+V25[i] + V26[i] + D52[i]
+    W4.append(concatenated_row)
+##################
+# lambda 21,22
+D55 = []
+for i in range(1, 2*n+1):
+    for q in range(2):
+        temp_row = []
+        for k in range(1, 2*n+1): # gamma 2
+            w = 0
+            if i==k:
+                w=-1/eps
+            temp_row.append(w)
+        D55.append(temp_row)
+
+##########
+D56 = []
+for i in range(1, 2*n+1):
+    for q in range(2):
+        temp_row = []
+        for l in range(1, 2*n+1):# mu 11,12
+            for k in range(1, 2*n+1):
+               for p in range(2):
+                 w = 0
+                 temp_row.append(w)
+        D56.append(temp_row)
+##########
+D57 = []
+for i in range(1, 2*n+1):
+    for q in range(2):
+        temp_row = []
+        for l in range(1, 2*n+1):# lambda11,12
+            for k in range(1, 2*n+1):
+               for p in range(2):
+                 w = 0
+                 temp_row.append(w)
+        D57.append(temp_row)
+##########
+##########
+V28 = []
+for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for l in range(1, 2*n+1):# mu and mu prime
+              for p in range(2):
+                w = 0
+                temp_row.append(w)
+            V28.append(temp_row)
+##########
+V29 = []
+for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for l in range(1, 2*n+1):# lambda and lambda prime
+              for p in range(2):
+                w = 0
+                temp_row.append(w)
+            V29.append(temp_row)
+##########
+D58 = []
+for i in range(1, 2*n+1):
+    for q in range(2):
+        temp_row = []
+        for k in range(1, 4*d+1):
+            w = 0
+            temp_row.append(w)
+        D58.append(temp_row)
+##########
+for i in range(len(D55)):
+    concatenated_row = D55[i] + D56[i] + D57[i]+V28[i] + V29[i] + D58[i]
+    W4.append(concatenated_row)
+##################    
+# psi 1
+D61 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1, 2*n+1):
+            w = 0
+            temp_row.append(w)
+        D61.append(temp_row)
+
+##########
+D62 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        temp_row = []
+        for j in range(1, 2*n+1):  # Mu11,12
+            for k in range(1, 2*n+1):
+                for p in range(2):
+                    w = 0
+                    if  i!=1 and i>l and k>j and j == l and i == k:
+                        if p == 0:
+                            w = 1
+                        else:
+                            w = -1
+                    temp_row.append(w)
+        D62.append(temp_row)
+##########
+D63 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        temp_row = []
+        for j in range(1, 2*n+1):  # lambda11,12
+            for k in range(1, 2*n+1):
+                for p in range(2):
+                    w = 0
+                    if  i!=1 and i>l and k>j and j == l and i == k:
+                        if p == 0:
+                            w = 1
+                        else:
+                            w = -1
+                    temp_row.append(w)
+        D63.append(temp_row)
+##########
+V31 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1, 2*n+1):
+            for q in range(2):
+              w = 0
+              temp_row.append(w)
+        V31.append(temp_row)
+##########
+V32 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1, 2*n+1):
+            for q in range(2):
+              w = 0
+              temp_row.append(w)
+        V32.append(temp_row)
+##########
+D64 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1, 4*d+1):
+            w = 0
+            temp_row.append(w)
+        D64.append(temp_row)
+##########
+for i in range(len(D61)):
+    concatenated_row = D61[i] + D62[i] + D63[i]+V31[i] + V32[i] + D64[i]
+    W4.append(concatenated_row)
+#######################
+# psi 2
+D67 = []
+for l in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1, 2*n+1):
+            w = 0
+            temp_row.append(w)
+        D67.append(temp_row)
+
+##########
+D68 = []
+for l in range(1, 2*n+1):
+        temp_row = []
+        for j in range(1, 2*n+1):  # Mu11,12
+            for k in range(1, 2*n+1):
+                for p in range(2):
+                    w = 0
+                    temp_row.append(w)
+        D68.append(temp_row)
+##########
+D69 = []
+for l in range(1, 2*n+1):
+        temp_row = []
+        for j in range(1, 2*n+1):  # lambda 11,12
+            for k in range(1, 2*n+1):
+                for p in range(2):
+                    w = 0
+                    temp_row.append(w)
+        D69.append(temp_row)
+##########
+##########
+V34 = []
+for i in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1, 2*n+1):
+            for q in range(2):
+              w = 0
+              if  i!=1 and i==k:
+                  if q == 0:
+                      w = 1
+                  else:
+                      w = -1
+              temp_row.append(w)
+        V34.append(temp_row)
+##########
+V35 = []
+for l in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1, 2*n+1):
+            for q in range(2):
+              w = 0
+              temp_row.append(w)
+        V35.append(temp_row)
+##########
+D70 = []
+for l in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1, 4*d+1):
+            w = 0
+            temp_row.append(w)
+        D70.append(temp_row)
+##########
+for i in range(len(D67)):
+    concatenated_row = D67[i] + D68[i] + D69[i]+V34[i] + V35[i]+ D70[i]
+    W4.append(concatenated_row)
+#########
+# psi 3
+D73 = []
+for l in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1, 2*n+1):
+            w = 0
+            temp_row.append(w)
+        D73.append(temp_row)
+
+##########
+D74 = []
+for l in range(1, 2*n+1):
+        temp_row = []
+        for j in range(1, 2*n+1):  # Mu11,12
+            for k in range(1, 2*n+1):
+                for p in range(2):
+                    w = 0
+                    temp_row.append(w)
+        D74.append(temp_row)
+##########
+D75 = []
+for l in range(1, 2*n+1):
+        temp_row = []
+        for j in range(1, 2*n+1):  # lambda 11, 12
+            for k in range(1, 2*n+1):
+                for p in range(2):
+                    w = 0
+                    temp_row.append(w)
+        D75.append(temp_row)
+##########
+V37 = []
+for i in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1, 2*n+1):
+            for q in range(2):
+              w = 0
+              temp_row.append(w)
+        V37.append(temp_row)
+##########
+V38 = []
+for i in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1, 2*n+1):
+            for q in range(2):
+              w = 0
+              if i==k:
+                  if q == 0:
+                      w = 1
+                  else:
+                      w = -1
+              temp_row.append(w)
+        V38.append(temp_row)
+##########
+D76 = []
+for l in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1, 4*d+1):
+            w = 0
+            temp_row.append(w)
+        D76.append(temp_row)
+##########
+for i in range(len(D73)):
+    concatenated_row = D73[i] + D74[i] + D75[i]+V37[i] + V38[i]+ D76[i]
+    W4.append(concatenated_row)
+#########
+# x nodes as identity map
+D97 = []
+for j in range(1, 4*d+1):
+        temp_row = []
+        for i in range(1, 2*n+1):
+            w = 0
+            temp_row.append(w)
+        D97.append(temp_row)
+
+##########
+D98 = []
+for j in range(1, 4*d+1):
+        temp_row = []
+        for i in range(1, 2*n+1):  # Mu11,12
+            for l in range(1, 2*n+1):
+                for p in range(2):
+                    w = 0
+                    temp_row.append(w)
+        D98.append(temp_row)
+##########
+D99 = []
+for j in range(1, 4*d+1):
+        temp_row = []
+        for i in range(1, 2*n+1):  # lambda 11, 12
+            for l in range(1, 2*n+1):
+                for p in range(2):
+                    w = 0
+                    temp_row.append(w)
+        D99.append(temp_row)
+##########
+V43 = []
+for j in range(1, 4*d+1):
+            temp_row = []
+            for l in range(1, 2*n+1):# mu and mu' nodes
+              for q in range(2):
+                w = 0
+                temp_row.append(w)
+            V43.append(temp_row)
+##########
+V44 = []
+for j in range(1, 4*d+1):
+            temp_row = []
+            for l in range(1, 2*n+1):# lambda and lambda' nodes
+              for q in range(2):
+                w = 0
+                temp_row.append(w)
+            V44.append(temp_row)
+##########
+D100 = []
+for j in range(1, 4*d+1):
+        temp_row = []
+        for l in range(1, 4*d+1):
+            w = 0
+            if j==l:
+                w = 1
+            temp_row.append(w)
+        D100.append(temp_row)
+##########
+for i in range(len(D97)):
+    concatenated_row = D97[i]+ D98[i] + D99[i]+V43[i] + V44[i]+ D100[i] 
+    W4.append(concatenated_row)
+# print("weight matrix for fifth layer/fourth hidden layer")
+# print(W4)
+#####################
+# Bias matrix for fifth layer/fourth hidden layer
+
+B4 = []
+# bias matrix for gamma 2 nodes
+
+for l in range(1, 2*n+1):
+        temp_row = []
+        for j in range(1):
+            b=0
+            temp_row.append(b)
+        B4.append(temp_row)
+# bias matrix for mu 21,22 nodes
+
+for i in range(1, 2*n+1):
+    for q in range(2):
+        temp_row = []
+        for j in range(1):
+            b=0
+            if q==0:
+                b=1
+            temp_row.append(b)
+        B4.append(temp_row) 
+
+# bias matrix for lambda 21,22 nodes
+
+for i in range(1, 2*n+1):
+    for q in range(2):
+        temp_row = []
+        for j in range(1):
+            b=0
+            if q==0:
+                b=1
+            temp_row.append(b)
+        B4.append(temp_row)
+        
+# bias matrix for psi 1 nodes
+
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        temp_row = []
+        for j in range(1):
+            b=0
+            if i!=1 and i>l:
+              b = -1
+            temp_row.append(b)
+        B4.append(temp_row)
+
+# bias matrix for psi 2 nodes
+
+for l in range(1, 2*n+1):
+        temp_row = []
+        for j in range(1):
+            b = 0
+            temp_row.append(b)
+        B4.append(temp_row)
+
+# bias matrix for psi 3 nodes
+
+for l in range(1, 2*n+1):
+        temp_row = []
+        for j in range(1):
+            b = 0
+            temp_row.append(b)
+        B4.append(temp_row)
+        
+# bias matrix for x nodes
+
+for l in range(1, 4*d+1):
+        temp_row = []
+        for j in range(1):
+            b = 0
+            temp_row.append(b)
+        B4.append(temp_row)
+               
+##################################        
+# print('Printing B4')
+# for i in B4:
+#     print(i)
+##################################
+L4 = []  # psi1,psi2,psi3 nodes
+for i in range(len(W4)):
+    temp_row = []
+    L4_i_entry = np.maximum((np.dot(W4[i], L3)+B4[i]), 0)
+    L4.append(L4_i_entry)
+    # print('this is index i:', i)
+    # print('this is the value L4[i]:', L4_i_entry)
+
+# print('Printing mu 21,22, lambda 21,22, psi1,psi2,psi3 nodes for fifth layer/fouth hidden hidden layer')
+# for i in L4:
+#     print(i)
+##################
+# To construct weight matrix for sixth layer/fifth hidden layer is L5=W5*L4+B5
+W5 = []
+# gamma 2 as identity map
+E11 = []
+
+for i in range(1, 2*n+1):
+        temp_row = []
+        for l in range(1, 2*n+1):# gamma 2
+                w = 0
+                if i == l:
+                    w = 1
+                temp_row.append(w)
+        E11.append(temp_row)
+
+##########
+E12 = []
+for i in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1, 2*n+1):# mu 21,22
+            for q in range(2):
+                w = 0
+                temp_row.append(w)
+        E12.append(temp_row)
+##########
+E13 = []
+for i in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1, 2*n+1):# lambda 21,22
+            for q in range(2):
+                w = 0
+                temp_row.append(w)
+        E13.append(temp_row)
+##########
+E14 = []
+for i in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1, 2*n+1):
+            for l in range(1, 2*n+1):
+                w = 0
+                temp_row.append(w)
+        E14.append(temp_row)
+##########
+E15 = []
+for i in range(1, 2*n+1):
+        temp_row = []
+        for l in range(1, 2*n+1):
+                w = 0
+                temp_row.append(w)
+        E15.append(temp_row)
+##########
+E16 = []
+for i in range(1, 2*n+1):
+        temp_row = []
+        for l in range(1, 2*n+1):
+                w = 0
+                temp_row.append(w)
+        E16.append(temp_row)
+##########
+E17 = []
+for i in range(1, 2*n+1):
+        temp_row = []
+        for l in range(1, 4*d+1):# x
+                w = 0
+                temp_row.append(w)
+        E17.append(temp_row)
+##########
+for i in range(len(E11)):
+    concatenated_row = E11[i] + E12[i] + E13[i] + E14[i] + E15[i] + E16[i] +E17[i] 
+    W5.append(concatenated_row)
+#######################
+# eta 3
+E21 = []
+
+for i in range(1, 2*n+1):
+        temp_row = []
+        for l in range(1, 2*n+1):# gamma 2
+                w = 0
+                temp_row.append(w)
+        E21.append(temp_row)
+
+##########
+E22 = []
+for i in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1, 2*n+1):# mu 21,22
+            for q in range(2):
+                w = 0
+                if i==k:
+                  if q==0:
+                    w=C
+                  else:
+                      w=-C
+                temp_row.append(w)
+        E22.append(temp_row)
+##########
+E23 = []
+for i in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1, 2*n+1):# lambda 21,22
+            for q in range(2):
+                w = 0
+                if i==k:
+                  if q==0:
+                    w=C
+                  else:
+                      w=-C
+                temp_row.append(w)
+        E23.append(temp_row)
+##########
+E24 = []
+for i in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1, 2*n+1):
+            for l in range(1, 2*n+1):
+                w = 0
+                temp_row.append(w)
+        E24.append(temp_row)
+##########
+E25 = []
+for i in range(1, 2*n+1):
+        temp_row = []
+        for l in range(1, 2*n+1):
+                w = 0
+                temp_row.append(w)
+        E25.append(temp_row)
+##########
+E26 = []
+for i in range(1, 2*n+1):
+        temp_row = []
+        for l in range(1, 2*n+1):
+                w = 0
+                temp_row.append(w)
+        E26.append(temp_row)
+##########
+E27 = []
+for i in range(1, 2*n+1):
+        temp_row = []
+        for l in range(1, 4*d+1):# x
+                w = 0
+                temp_row.append(w)
+        E27.append(temp_row)
+##########
+for i in range(len(E21)):
+    concatenated_row = E21[i] + E22[i] + E23[i] + E24[i] + E25[i] + E26[i] + E27[i]
+    W5.append(concatenated_row)
+#######################
+# omega 1
+E31 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+        E31.append(temp_row)
+##########
+E32 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1, 2*n+1):# mu 21,22
+            for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+        E32.append(temp_row)
+##########
+E33 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1, 2*n+1):# lambda 21,22
+            for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+        E33.append(temp_row)
+##########
+
+E34 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        temp_row = []
+        for j in range(1, 2*n+1):# psi1
+            for k in range(1, 2*n+1):
+                w = 0
+                if i!=1 and k!=1 and i>l and k>j and i == k and l == j:
+                    w=1
+                temp_row.append(w)
+        E34.append(temp_row)
+##########
+E35 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        temp_row = []
+        for j in range(1, 2*n+1):
+                    w = 0
+                    if i!=1 and i>l and j >= l+1 and j<i:
+                        w = -C
+                    temp_row.append(w)
+        E35.append(temp_row)
+##########
+E36 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        temp_row = []
+        for j in range(1, 2*n+1):
+                w = 0
+                if i!=1 and i>l and j >= l+1 and j < i:
+                    w = C
+                temp_row.append(w)
+        E36.append(temp_row)
+##########
+E37 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        temp_row = []
+        for j in range(1, 4*d+1):# x
+                w = 0
+                temp_row.append(w)
+        E37.append(temp_row)
+##########
+for i in range(len(E31)):
+    concatenated_row = E31[i] + E32[i] + E33[i] + E34[i] + E35[i] + E36[i] + E37[i] 
+    W5.append(concatenated_row)
+#######################
+#  x nodes
+E41 = []
+for i in range(1, 4*d+1):
+    temp_row = []
+    for l in range(1, 2*n+1):
+        w = 0
+        temp_row.append(w)
+    E41.append(temp_row)
+
+##########
+E42 = []
+for i in range(1, 4*d+1):
+    temp_row = []
+    for j in range(1, 2*n+1):# mu 21,22
+        for q in range(2):
+                w = 0
+                temp_row.append(w)
+    E42.append(temp_row)
+##########
+E43 = []
+for i in range(1, 4*d+1):
+    temp_row = []
+    for j in range(1, 2*n+1):# lambda 21,22
+        for q in range(2):
+                w = 0
+                temp_row.append(w)
+    E43.append(temp_row)
+##########
+E44 = []
+for i in range(1, 4*d+1):
+    temp_row = []
+    for j in range(1, 2*n+1):
+        for l in range(1, 2*n+1):
+                w = 0
+                temp_row.append(w)
+    E44.append(temp_row)
+##########
+E45 = []
+for i in range(1, 4*d+1):
+    temp_row = []
+    for k in range(1, 2*n+1):
+            w = 0
+            temp_row.append(w)
+    E45.append(temp_row)
+##########
+E46 = []
+for i in range(1, 4*d+1):
+    temp_row = []
+    for k in range(1, 2*n+1):
+            w = 0
+            temp_row.append(w)
+    E46.append(temp_row)
+##########
+E47 = []
+for i in range(1, 4*d+1):
+    temp_row = []
+    for k in range(1, 4*d+1):
+            w = 0
+            if i==k:
+                w=1
+            temp_row.append(w)
+    E47.append(temp_row)
+# ##########
+for i in range(len(E41)):
+    concatenated_row =  E41[i] + E42[i] + E43[i] + E44[i] + E45[i]+ E46[i]+E47[i]
+    W5.append(concatenated_row)
+# #######################
+# # print("weight matrix for sixth layer/fifth hidden layer")
+# # print(W5)
+# # #####################
+##Bias matrix for sixth layer/fifth hidden layer
+
+B5 = []
+        
+# bias matrix for gamma 2 nodes
+
+for l in range(1, 2*n+1):
+        temp_row = []
+        for j in range(1):
+            b = 0
+            temp_row.append(b)
+        B5.append(temp_row) 
+        
+# bias matrix for eta 3 nodes
+
+for l in range(1, 2*n+1):
+        temp_row = []
+        for j in range(1):
+            b = -2*C+2*n
+            temp_row.append(b)
+        B5.append(temp_row)        
+# bias matrix for omega 1 nodes
+
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        temp_row = []
+        for j in range(1):
+            b = 0
+            temp_row.append(b)
+        B5.append(temp_row)
+# bias matrix for x nodes
+
+for i in range(1, 4*d+1):
+    temp_row = []
+    for j in range(1):
+        b = 0
+        temp_row.append(b)
+    B5.append(temp_row)     
+##################################
+L5 = []  # eta 3, omega 1 and x nodes
+for i in range(len(W5)):
+    temp_row = []
+    L5_i_entry = np.maximum((np.dot(W5[i], L4)+B5[i]),0)
+    L5.append(L5_i_entry)
+# print('Printing eta 3, eta 4, omega1  nodes for sixth layer/fifth hidden layer')
+# for i in L5:
+#     print(i)
+###################
+# To construct weight matrix for seventh layer/sixth hidden layer is L6=W6*L5+B6
+W6 = []
+# alpha 21,22
+
+F1 = []
+for j in range(1, d+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for l in range(1, 2*n+1):
+                w = 0
+                if i == l:
+                    w = 1/eps
+                temp_row.append(w)
+            F1.append(temp_row)          
+##########
+F2 = []
+for j in range(1, d+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for l in range(1, 2*n+1):
+                w = 0
+                if i == l:
+                    w = 1/eps
+                temp_row.append(w)
+            F2.append(temp_row)          
+##########
+F3 = []
+for j in range(1, d+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for l in range(1, 2*n+1):  
+                for k in range(1, 2*n+1):
+                        w = 0
+                        temp_row.append(w)
+            F3.append(temp_row)
+##########
+F4 = []
+for j in range(1, d+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, d+1):# x1_j nodes
+                w = 0
+                if k == j:
+                    w = -1/eps
+                temp_row.append(w)
+            F4.append(temp_row)
+##########
+F5 = []
+for j in range(1, d+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(d+1, 2*d+1):# x2_j nodes
+                w = 0
+                temp_row.append(w)
+            F5.append(temp_row)
+##########
+F6 = []
+for j in range(1, d+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(2*d+1, 3*d+1):# x3_j nodes
+                w = 0
+                temp_row.append(w)
+            F6.append(temp_row)
+##########
+F7 = []
+for j in range(1, d+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(3*d+1, 4*d+1):# x4_j nodes
+                w = 0
+                temp_row.append(w)
+            F7.append(temp_row)
+##########
+for i in range(len(F1)):
+    concatenated_row = F1[i] + F2[i] + F3[i] + F4[i] + F5[i] + F6[i] + F7[i]
+    W6.append(concatenated_row)
+#######################
+# beta 21,22
+
+F8 = []
+for j in range(1, d+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for l in range(1, 2*n+1):
+                w = 0
+                if i == l:
+                    w = -1/eps
+                temp_row.append(w)
+            F8.append(temp_row)
+##########
+F9 = []
+for j in range(1, d+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for l in range(1, 2*n+1):
+                w = 0
+                if i == l:
+                    w = -1/eps
+                temp_row.append(w)
+            F9.append(temp_row)
+##########
+F10 = []
+for j in range(1, d+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for l in range(1, 2*n+1):  
+                for k in range(1, 2*n+1):
+                        w = 0
+                        temp_row.append(w)
+            F10.append(temp_row)
+##########
+F11 = []
+for j in range(1, d+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, d+1):# x1_j nodes
+                w = 0
+                if k == j:
+                    w = 1/eps
+                temp_row.append(w)
+            F11.append(temp_row)
+##########
+F12 = []
+for j in range(1, d+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(d+1, 2*d+1):# x2_j nodes
+                w = 0
+                temp_row.append(w)
+            F12.append(temp_row)
+##########
+F13 = []
+for j in range(1, d+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(2*d+1, 3*d+1):# x3_j nodes
+                w = 0
+                temp_row.append(w)
+            F13.append(temp_row)
+##########
+F14 = []
+for j in range(1, d+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(3*d+1, 4*d+1):# x4_j nodes
+                w = 0
+                temp_row.append(w)
+            F14.append(temp_row)
+##########
+for i in range(len(F8)):
+    concatenated_row = F8[i] + F9[i] + F10[i] + F11[i] + F12[i] + F13[i] + F14[i]
+    W6.append(concatenated_row)
+#######################
+# alpha 31,32 nodes
+F15 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+      for p in range(2):  
+            temp_row = []
+            for k in range(1, 2*n+1):# gamma 2 nodes
+                  w = 0
+                  temp_row.append(w)
+            F15.append(temp_row)
+
+##########
+F16 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+      for p in range(2):  
+            temp_row = []
+            for k in range(1, 2*n+1):# eta 3 nodes
+                  w = 0
+                  temp_row.append(w)
+            F16.append(temp_row)
+
+##########
+F17 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+      for p in range(2):
+            temp_row = []
+            for k in range(1, 2*n+1): # omega1 nodes
+                for q in range(1, 2*n+1):
+                  w = 0
+                  if q==i and k==l:
+                      w=1/eps
+                  temp_row.append(w)
+            F17.append(temp_row)
+##########
+##########
+F18 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+      for p in range(2):
+            temp_row = []
+            for k in range(1, 4*d+1):
+                  w = 0
+                  temp_row.append(w)
+            F18.append(temp_row)
+##########
+for i in range(len(F15)):
+    concatenated_row = F15[i] + F16[i] + F17[i]  + F18[i] 
+    W6.append(concatenated_row)
+#######################
+# beta 31,32 nodes
+F19 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+      for p in range(2):  
+            temp_row = []
+            for k in range(1, 2*n+1):# gamma 2 nodes
+                  w = 0
+                  temp_row.append(w)
+            F19.append(temp_row)
+##########
+F20 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+      for p in range(2):  
+            temp_row = []
+            for k in range(1, 2*n+1):# eta 3 nodes
+                  w = 0
+                  temp_row.append(w)
+            F20.append(temp_row)
+##########
+F21 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+      for p in range(2):
+            temp_row = []
+            for k in range(1, 2*n+1): # omega1 nodes
+                for q in range(1, 2*n+1):
+                  w = 0
+                  if q==i and k==l:
+                      w=-1/eps
+                  temp_row.append(w)
+            F21.append(temp_row)
+##########
+##########
+F22 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+      for p in range(2):
+            temp_row = []
+            for k in range(1, 4*d+1):
+                  w = 0
+                  temp_row.append(w)
+            F22.append(temp_row)
+##########
+for i in range(len(F19)):
+    concatenated_row = F19[i] + F20[i] + F21[i]  + F22[i]
+    W6.append(concatenated_row)
+#######################
+# x2_j nodes
+F23 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for i in range(1, 2*n+1):# gamma 2 nodes
+                  w = 0
+                  temp_row.append(w)
+            F23.append(temp_row)
+##########
+F24 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for i in range(1, 2*n+1):# eta 3 nodes
+                  w = 0
+                  temp_row.append(w)
+            F24.append(temp_row)
+##########
+F25 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for k in range(1, 2*n+1): # omega1 nodes
+                for q in range(1, 2*n+1):
+                  w = 0
+                  temp_row.append(w)
+            F25.append(temp_row)
+##########
+F26 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for k in range(1, d+1):
+                  w = 0
+                  temp_row.append(w)
+            F26.append(temp_row)
+##########
+F27 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for k in range(d+1, 2*d+1):
+                  w = 0
+                  if j+d==k:
+                      w=1
+                  temp_row.append(w)
+            F27.append(temp_row)
+##########
+F28 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for k in range(2*d+1, 4*d+1):
+                  w = 0
+                  temp_row.append(w)
+            F28.append(temp_row)
+##########
+for i in range(len(F23)):
+    concatenated_row = F23[i] + F24[i] + F25[i]+ F26[i] + F27[i] + F28[i] 
+    W6.append(concatenated_row)
+#######################
+# x3_j nodes
+F29 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for i in range(1, 2*n+1):# gamma 2 nodes
+                  w = 0
+                  temp_row.append(w)
+            F29.append(temp_row)
+##########
+F30 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for i in range(1, 2*n+1):# eta 3 nodes
+                  w = 0
+                  temp_row.append(w)
+            F30.append(temp_row)
+
+##########
+F31 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for k in range(1, 2*n+1): # omega1 nodes
+                for q in range(1, 2*n+1):
+                  w = 0
+                  temp_row.append(w)
+            F31.append(temp_row)
+##########
+F32 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for k in range(1, 2*d+1):
+                  w = 0
+                  temp_row.append(w)
+            F32.append(temp_row)
+##########
+F33 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for k in range(2*d+1, 3*d+1):
+                  w = 0
+                  if j+2*d==k:
+                      w=1
+                  temp_row.append(w)
+            F33.append(temp_row)
+##########
+F34 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for k in range(3*d+1, 4*d+1):
+                  w = 0
+                  temp_row.append(w)
+            F34.append(temp_row)
+##########
+for i in range(len(F29)):
+    concatenated_row = F29[i] + F30[i] + F31[i]+ F32[i] + F33[i] + F34[i]  
+    W6.append(concatenated_row)
+#######################
+# x4_j nodes
+F35 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for i in range(1, 2*n+1):# gamma 2 nodes
+                  w = 0
+                  temp_row.append(w)
+            F35.append(temp_row)
+
+##########
+F36 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for i in range(1, 2*n+1):# eta 3 nodes
+                  w = 0
+                  temp_row.append(w)
+            F36.append(temp_row)
+
+##########
+F37 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for k in range(1, 2*n+1): # omega1 nodes
+                for q in range(1, 2*n+1):
+                  w = 0
+                  temp_row.append(w)
+            F37.append(temp_row)
+##########
+F38 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for k in range(1, 3*d+1):
+                  w = 0
+                  temp_row.append(w)
+            F38.append(temp_row)
+##########
+F39 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for k in range(3*d+1, 4*d+1):
+                  w = 0
+                  if j+3*d==k:
+                      w=1
+                  temp_row.append(w)
+            F39.append(temp_row)
+##########
+for i in range(len(F35)):
+    concatenated_row = F35[i] + F36[i] + F37[i]+ F38[i] + F39[i]  
+    W6.append(concatenated_row)
+#######################
+# print("weight matrix for seventh layer/sixth hidden layer")
+# print(W6)
+#####################
+#Bias matrix for seventh layer/sixth hidden layer
+
+B6 = []
+# bias matrix for alpha 21,22
+
+for j in range(1, d+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1):
+                b = 0
+                if q == 0:
+                    b = 1
+                temp_row.append(b)
+            B6.append(temp_row)
+
+# bias matrix for beta 21,22
+
+for j in range(1, d+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1):
+                b = 0
+                if q == 0:
+                    b = 1
+                temp_row.append(b)
+            B6.append(temp_row)
+
+# bias matrix alpha 31,32 nodes
+
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for j in range(1):
+                b = 0
+                if q == 0:
+                      b = (-1/eps)+1
+                else:
+                      b = -1/eps
+                temp_row.append(b)
+            B6.append(temp_row)
+
+# bias matrix for beta 31,32 nodes
+
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+            temp_row = []
+            for j in range(1):
+                b = 0
+                if q == 0:
+                      b = (1/eps)+1
+                else:
+                      b = 1/eps
+                temp_row.append(b)
+            B6.append(temp_row)
+            
+# bias matrix for x2_j, x3_j, x4_j nodes
+
+for l in range(d+1, 4*d+1):
+            temp_row = []
+            for j in range(1):
+                b = 0
+                temp_row.append(b)
+            B6.append(temp_row)
+# print('Printing B6')
+# for i in B6:
+#     print(i)
+##################################
+L6 = []  # alpha 21,22, beta 21,22, alpha 31,32 and beta 31,32 nodes
+for i in range(len(W6)):
+    temp_row = []
+    L6_i_entry = np.maximum((np.dot(W6[i], L5)+B6[i]), 0)
+    L6.append(L6_i_entry)
+############################
+# print('Printing alpha 21,22, beta 21,22, alpha 31,32 and beta 31,32 nodes for seventh layer/sixth hidden layer')
+# for i in L6:
+#     print(i)
+############
+# To construct weight matrix for eighth layer/seventh hidden layer is L7=W7*L6+B7
+W7 = []
+# Phi(corresponding to q') nodes
+F40 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for k in range(1, d+1):
+                for i in range(1, 2*n+1): 
+                      for p in range(2):
+                        w = 0
+                        if j == k:
+                          if p==0:
+                            w = i
+                          else:
+                              w=-i
+                        temp_row.append(w)
+            F40.append(temp_row)
+##########
+F41 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for k in range(1, d+1):
+                for i in range(1, 2*n+1): 
+                      for p in range(2):
+                        w = 0
+                        if j == k:
+                          if p==0:
+                            w = i
+                          else:
+                              w=-i
+                        temp_row.append(w)
+            F41.append(temp_row)
+##########
+F42 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for k in range(1, 2*n+1):
+                for i in range(1, 2*n+1): 
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+            F42.append(temp_row)
+##########
+F43 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for k in range(1, 2*n+1):
+                for i in range(1, 2*n+1): 
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+            F43.append(temp_row)
+##########
+F44 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for k in range(1, d+1):
+                        w = 0
+                        temp_row.append(w)
+            F44.append(temp_row)
+##########
+F45 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for k in range(1, d+1):
+                        w = 0
+                        temp_row.append(w)
+            F45.append(temp_row)
+##########
+F46 = []
+for j in range(1, d+1): 
+            temp_row = []
+            for k in range(1, d+1):
+                        w = 0
+                        temp_row.append(w)
+            F46.append(temp_row)
+##########
+for i in range(len(F40)):
+    concatenated_row = F40[i] + F41[i] + F42[i] + F43[i]+ F44[i] + F45[i] + F46[i]
+    W7.append(concatenated_row)
+# print(W7)
+#################
+# zeta 1 nodes
+F47 = []
+for i in range(1, 2*n+1):
+    for l in range(1, 2*n+1): 
+            temp_row = []
+            for j in range(1, d+1):# alpha 21,22 nodes
+                for k in range(1, 2*n+1): 
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+            F47.append(temp_row)
+
+##########
+F48 = []
+for i in range(1, 2*n+1):
+    for l in range(1, 2*n+1): 
+            temp_row = []
+            for j in range(1, d+1):# beta 21,22 nodes
+                for k in range(1, 2*n+1): 
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+            F48.append(temp_row)
+##########
+F49 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1): 
+            temp_row = []
+            for k in range(1, 2*n+1):# alpha 31,32 nodes
+                for j in range(1, 2*n+1):  
+                      for p in range(2):
+                        w = 0
+                        if i==j and l==k:
+                            if p==0:
+                                w=1
+                            else:
+                                w=-1
+                        temp_row.append(w)
+            F49.append(temp_row)
+##########
+F50 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1): 
+            temp_row = []
+            for k in range(1, 2*n+1):# beta 31,32 nodes
+                for j in range(1, 2*n+1):  
+                      for p in range(2):
+                        w = 0
+                        if l==k and i==j:
+                            if p==0:
+                                w=1
+                            else:
+                                w=-1
+                        temp_row.append(w)
+            F50.append(temp_row)
+##########
+F51 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1): 
+            temp_row = []
+            for k in range(1, d+1):# x2_j nodes
+                        w = 0
+                        temp_row.append(w)
+            F51.append(temp_row)
+##########
+F52 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1): 
+            temp_row = []
+            for k in range(1, d+1):# x3_j nodes
+                        w = 0
+                        temp_row.append(w)
+            F52.append(temp_row)
+##########
+F53 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1): 
+            temp_row = []
+            for k in range(1, d+1):# x4_j nodes
+                        w = 0
+                        temp_row.append(w)
+            F53.append(temp_row)
+##########
+for i in range(len(F47)):
+    concatenated_row = F47[i] + F48[i] + F49[i] + F50[i]+ F51[i] + F52[i] + F53[i]
+    W7.append(concatenated_row)
+######################
+# zeta 2 nodes
+F54 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1): 
+            temp_row = []
+            for k in range(1, d+1):# alpha 21,22 nodes
+                for r in range(1, 2*n+1): 
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+            F54.append(temp_row)
+
+##########
+F55 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1): 
+            temp_row = []
+            for k in range(1, d+1):# beta 21,22 nodes
+                for r in range(1, 2*n+1):  
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+            F55.append(temp_row)
+##########
+F56 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1): 
+            temp_row = []
+            for k in range(1, 2*n+1):# alpha 31,32 nodes
+                for j in range(1, 2*n+1):  
+                      for p in range(2):
+                        w = 0
+                        if  i != 1 and i>l and j != 1 and j>k and i==j and k>=l+1 and k<i:
+                            if p==0:
+                                w=1
+                            else:
+                                w=-1
+                        temp_row.append(w)
+            F56.append(temp_row)
+##########
+F57 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1): 
+            temp_row = []
+            for k in range(1, 2*n+1):# beta 31,32 nodes
+                for j in range(1, 2*n+1):  
+                      for p in range(2):
+                        w = 0
+                        if  i != 1 and i>l and j != 1 and j>k and i==j and k>=l+1 and k<i:
+                            if p==0:
+                                w=1
+                            else:
+                                w=-1
+                        temp_row.append(w)
+            F57.append(temp_row)
+F58 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1): 
+            temp_row = []
+            for k in range(1, d+1):# x2_j nodes
+                        w = 0
+                        temp_row.append(w)
+            F58.append(temp_row)
+##########
+F59 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1): 
+            temp_row = []
+            for k in range(1, d+1):# x3_j nodes
+                        w = 0
+                        temp_row.append(w)
+            F59.append(temp_row)
+##########
+F60 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1): 
+            temp_row = []
+            for k in range(1, d+1):# x4_j nodes
+                        w = 0
+                        temp_row.append(w)
+            F60.append(temp_row)
+##########
+for i in range(len(F54)):
+    concatenated_row = F54[i] + F55[i] + F56[i] + F57[i]+ F58[i] + F59[i] + F60[i]
+    W7.append(concatenated_row)
+######################
+# X2_J nodes
+F61 = []
+for l in range(1, d+1):
+            temp_row = []
+            for k in range(1, d+1):# alpha 21,22 nodes
+                for r in range(1, 2*n+1): 
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+            F61.append(temp_row)
+
+##########
+F62 = []
+for l in range(1, d+1): 
+            temp_row = []
+            for k in range(1, d+1):# beta 21,22 nodes
+                for r in range(1, 2*n+1):  
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+            F62.append(temp_row)
+##########
+F63 = []
+for l in range(1, d+1):
+            temp_row = []
+            for k in range(1, 2*n+1):# alpha 31,32 nodes
+                for j in range(1, 2*n+1):  
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+            F63.append(temp_row)
+##########
+F64 = []
+for l in range(1, d+1): 
+            temp_row = []
+            for k in range(1, 2*n+1):# beta 31,32 nodes
+                for j in range(1, 2*n+1):  
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+            F64.append(temp_row)
+F65 = []
+for l in range(1, d+1): 
+            temp_row = []
+            for k in range(1, d+1):# x2_j nodes
+                        w = 0
+                        if l==k:
+                            w=1
+                        temp_row.append(w)
+            F65.append(temp_row)
+##########
+F66 = []
+for l in range(1, d+1):
+            temp_row = []
+            for k in range(1, d+1):# x3_j nodes
+                        w = 0
+                        temp_row.append(w)
+            F66.append(temp_row)
+##########
+F67 = []
+for l in range(1, d+1):
+            temp_row = []
+            for k in range(1, d+1):# x4_j nodes
+                        w = 0
+                        temp_row.append(w)
+            F67.append(temp_row)
+##########
+for i in range(len(F61)):
+    concatenated_row = F61[i] + F62[i] + F63[i] + F64[i]+ F65[i] + F66[i] + F67[i]
+    W7.append(concatenated_row)
+######################
+# X3_J nodes
+F68 = []
+for l in range(1, d+1):
+            temp_row = []
+            for k in range(1, d+1):# alpha 21,22 nodes
+                for r in range(1, 2*n+1): 
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+            F68.append(temp_row)
+
+##########
+F69 = []
+for l in range(1, d+1): 
+            temp_row = []
+            for k in range(1, d+1):# beta 21,22 nodes
+                for r in range(1, 2*n+1):  
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+            F69.append(temp_row)
+##########
+F70 = []
+for l in range(1, d+1):
+            temp_row = []
+            for k in range(1, 2*n+1):# alpha 31,32 nodes
+                for j in range(1, 2*n+1):  
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+            F70.append(temp_row)
+##########
+F71 = []
+for l in range(1, d+1): 
+            temp_row = []
+            for k in range(1, 2*n+1):# beta 31,32 nodes
+                for j in range(1, 2*n+1):  
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+            F71.append(temp_row)
+F72 = []
+for l in range(1, d+1): 
+            temp_row = []
+            for k in range(1, d+1):# x2_j nodes
+                        w = 0
+                        temp_row.append(w)
+            F72.append(temp_row)
+##########
+F73 = []
+for l in range(1, d+1):
+            temp_row = []
+            for k in range(1, d+1):# x3_j nodes
+                        w = 0
+                        if l==k:
+                            w=1
+                        temp_row.append(w)
+            F73.append(temp_row)
+##########
+F74 = []
+for l in range(1, d+1):
+            temp_row = []
+            for k in range(1, d+1):# x4_j nodes
+                        w = 0
+                        temp_row.append(w)
+            F74.append(temp_row)
+##########
+for i in range(len(F68)):
+    concatenated_row = F68[i] + F69[i] + F70[i] + F71[i]+ F72[i] + F73[i] + F74[i]
+    W7.append(concatenated_row)
+######################
+# X4_J nodes
+F75 = []
+for l in range(1, d+1):
+            temp_row = []
+            for k in range(1, d+1):# alpha 21,22 nodes
+                for r in range(1, 2*n+1): 
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+            F75.append(temp_row)
+
+##########
+F76 = []
+for l in range(1, d+1): 
+            temp_row = []
+            for k in range(1, d+1):# beta 21,22 nodes
+                for r in range(1, 2*n+1):  
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+            F76.append(temp_row)
+##########
+F77 = []
+for l in range(1, d+1):
+            temp_row = []
+            for k in range(1, 2*n+1):# alpha 31,32 nodes
+                for j in range(1, 2*n+1):  
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+            F77.append(temp_row)
+##########
+F78 = []
+for l in range(1, d+1): 
+            temp_row = []
+            for k in range(1, 2*n+1):# beta 31,32 nodes
+                for j in range(1, 2*n+1):  
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+            F78.append(temp_row)
+F79 = []
+for l in range(1, d+1): 
+            temp_row = []
+            for k in range(1, d+1):# x2_j nodes
+                        w = 0
+                        temp_row.append(w)
+            F79.append(temp_row)
+##########
+F80 = []
+for l in range(1, d+1):
+            temp_row = []
+            for k in range(1, d+1):# x3_j nodes
+                        w = 0
+                        temp_row.append(w)
+            F80.append(temp_row)
+##########
+F81 = []
+for l in range(1, d+1):
+            temp_row = []
+            for k in range(1, d+1):# x4_j nodes
+                        w = 0
+                        if l==k:
+                            w=1
+                        temp_row.append(w)
+            F81.append(temp_row)
+##########
+for i in range(len(F75)):
+    concatenated_row = F75[i] + F76[i] + F77[i] + F78[i]+ F79[i] + F80[i] + F81[i]
+    W7.append(concatenated_row)
+######################
+# print("weight matrix for eighth layer/seventh hidden layer")
+# print(W7)
+#####################
+# #Bias matrix for eighth layer/seventh hidden layer
+
+# Summation using the sum function with a generator expression
+sum_of_all_i = sum(i for i in range(1, 2*n+1))
+
+# print("Summation (sum function):", sum_of_all_i)
+
+B7 = []
+# bias matrix for Phi
+
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1):
+              w = -sum_of_all_i
+              temp_row.append(w)
+          B7.append(temp_row)
+        
+# bias matrix for zeta 1 
+
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1):
+            w = -1
+            temp_row.append(w)
+        B7.append(temp_row)
+        
+# bias matrix for zeta 2 
+
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1):
+            w=0
+            if i != 1 and i>l:
+                w = -(i-l-1)
+            temp_row.append(w)
+        B7.append(temp_row)
+        
+# bias matrix for x2_j, x3_j, x4_j nodes
+
+for l in range(d+1, 4*d+1):
+            temp_row = []
+            for j in range(1):
+                w = 0
+                temp_row.append(w)
+            B7.append(temp_row)
+# print('Printing B7')
+# for i in B7:
+#     print(i)
+##################################
+L7 = []  # Phi, zeta 1, zeta 2 and zeta 3 nodes
+for i in range(len(W7)):
+    temp_row = []
+    L7_i_entry = np.maximum((np.dot(W7[i], L6)+B7[i]), 0)
+    L7.append(L7_i_entry)
+##################################
+# print('Printing Phi, zeta 1, zeta 2 nodes for eighth layer/seventh hidden layer')
+# for i in L7:
+#     print(i)
+############
+# To construct weight matrix for ninth layer/eighth hidden layer is L8=W8*L7+B8
+W8 = []
+# Phi nodes as identity map
+G1 = []
+for j in range(1, d+1):
+    temp_row = []
+    for k in range(1, d+1):
+        w = 0
+        if j==k:
+            w=1
+        temp_row.append(w)
+    G1.append(temp_row)
+##########
+G2 = []
+for j in range(1, d+1):
+    temp_row = []
+    for l in range(1, 2*n+1):
+        for i in range(1, 2*n+1):
+            w = 0
+            temp_row.append(w)
+    G2.append(temp_row)
+##########
+G3 = []
+for j in range(1, d+1):
+    temp_row = []
+    for l in range(1, 2*n+1):
+        for i in range(1, 2*n+1):
+            w = 0
+            temp_row.append(w)
+    G3.append(temp_row)    
+##########
+G4 = []
+for j in range(1, d+1):
+    temp_row = []
+    for l in range(1, 3*d+1):
+            w = 0
+            temp_row.append(w)
+    G4.append(temp_row)    
+##########
+for i in range(len(G1)):
+    concatenated_row = G1[i] + G2[i] + G3[i] + G4[i]
+    W8.append(concatenated_row)
+# print(W8)
+######################
+# omega 2 nodes
+G5 = []
+for j in range(1, 2*n+1):
+    for l in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          G5.append(temp_row)
+##########
+G6 = []
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for j in range(1, 2*n+1):
+                for k in range(1, 2*n+1):
+                    w = 0
+                    if l==j and i==k:
+                        w = 1
+                    temp_row.append(w)
+          G6.append(temp_row)
+##########
+G7 = []
+for i in range(1, 2*n+1):
+    for l in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1, 2*n+1):
+                for j in range(1, 2*n+1):
+                    w = 0
+                    if l==j and i==k:
+                        w = -1
+                    temp_row.append(w)
+          G7.append(temp_row)    
+##########
+G8 = []
+for i in range(1, 2*n+1):
+    for l in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    temp_row.append(w)
+          G8.append(temp_row)    
+##########
+for i in range(len(G5)):
+    concatenated_row = G5[i] + G6[i] + G7[i] + G8[i]
+    W8.append(concatenated_row)    
+#######################
+# x2_j nodes
+G9 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          G9.append(temp_row)
+##########
+G10 = []
+for l in range(1, d+1):
+          temp_row = []
+          for j in range(1, 2*n+1):
+                for k in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          G10.append(temp_row)
+##########
+G11 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 2*n+1):
+                for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          G11.append(temp_row)    
+##########
+G12 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i==k:
+                        w=1
+                    temp_row.append(w)
+          G12.append(temp_row)        
+##########
+for i in range(len(G9)):
+    concatenated_row = G9[i] + G10[i] + G11[i] + G12[i]
+    W8.append(concatenated_row)    
+#######################
+# x3_j nodes
+G13 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          G13.append(temp_row)
+##########
+G14 = []
+for l in range(1, d+1):
+          temp_row = []
+          for j in range(1, 2*n+1):
+                for k in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          G14.append(temp_row)
+##########
+G15 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 2*n+1):
+                for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          G15.append(temp_row)    
+##########
+G16 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i+d==k:
+                        w=1
+                    temp_row.append(w)
+          G16.append(temp_row)        
+##########
+for i in range(len(G13)):
+    concatenated_row = G13[i] + G14[i] + G15[i] + G16[i]
+    W8.append(concatenated_row)    
+#######################
+# x4_j nodes
+G17 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          G17.append(temp_row)
+##########
+G18 = []
+for l in range(1, d+1):
+          temp_row = []
+          for j in range(1, 2*n+1):
+                for k in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          G18.append(temp_row)
+##########
+G19 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 2*n+1):
+                for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          G19.append(temp_row)    
+##########
+G20 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i+2*d==k:
+                        w=1
+                    temp_row.append(w)
+          G20.append(temp_row)        
+##########
+for i in range(len(G17)):
+    concatenated_row = G17[i] + G18[i] + G19[i] + G20[i]
+    W8.append(concatenated_row)    
+#######################
+# print("weight matrix for ninth layer/eighth hidden layer")
+# print(W8)
+#####################
+# #Bias matrix for ninth layer/eighth hidden layer
+
+B8 = []
+# bias matrix for Phi
+
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              temp_row.append(w)
+          B8.append(temp_row)
+
+# bias matrix for omega 2
+
+for l in range(1, 2*n+1):
+    for i in range(1, 2*n+1):
+        temp_row = []
+        for k in range(1):
+            w = 0
+            temp_row.append(w)
+        B8.append(temp_row)
+        
+# bias matrix for x2,x3,x4_j
+
+for i in range(1, 3*d+1):
+        temp_row = []
+        for k in range(1):
+            w = 0
+            temp_row.append(w)
+        B8.append(temp_row)
+       
+#####################       
+# print('Printing B8')
+# for i in B8:
+#     print(i)
+##################################
+L8 = []  # omega 2 nodes
+for i in range(len(W8)):
+    temp_row = []
+    L8_i_entry = np.maximum((np.dot(W8[i], L7)+B8[i]), 0)
+    L8.append(L8_i_entry)
+
+# print('Printing omega 2 nodes for ninth layer/eighth hidden layer')
+# for i in L8:
+#     print(i)
+##############
+# To construct weight matrix for tenth layer/ninth hidden layer is L9=W9*L8+B9
+W9 = []
+# Phi nodes as identity map
+G21 = []
+for j in range(1, d+1):
+    temp_row = []
+    for k in range(1, d+1):
+        w = 0
+        if j==k:
+            w=1
+        temp_row.append(w)
+    G21.append(temp_row)
+##########
+G22 = []
+for j in range(1, d+1):
+    temp_row = []
+    for l in range(1, 2*n+1):
+        for i in range(1, 2*n+1):
+            w = 0
+            temp_row.append(w)
+    G22.append(temp_row)
+##########
+G23 = []
+for j in range(1, d+1):
+    temp_row = []
+    for l in range(1, 3*d+1):
+            w = 0
+            temp_row.append(w)
+    G23.append(temp_row)    
+##########
+for i in range(len(G21)):
+    concatenated_row = G21[i] + G22[i] + G23[i] 
+    W9.append(concatenated_row)
+# print(W9)
+######################
+# omega 3 nodes
+G24 = []
+for l in range(0, 2*n+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          G24.append(temp_row)
+##########
+G25 = []
+for l in range(0, 2*n+1):
+          temp_row = []
+          for j in range(1, 2*n+1):
+                for i in range(1, 2*n+1):
+                    w = 0
+                    if l==0:
+                        w=0
+                    if l==j:
+                        w = i
+                    temp_row.append(w)
+          G25.append(temp_row)
+##########
+G26 = []
+for l in range(0, 2*n+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    temp_row.append(w)
+          G26.append(temp_row)    
+##########
+for i in range(len(G24)):
+    concatenated_row = G24[i] + G25[i] + G26[i]
+    W9.append(concatenated_row)    
+#######################
+# x2_j nodes
+G27 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          G27.append(temp_row)
+##########
+G28 = []
+for l in range(1, d+1):
+          temp_row = []
+          for j in range(1, 2*n+1):
+                for k in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          G28.append(temp_row)    
+##########
+G29 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i==k:
+                        w=1
+                    temp_row.append(w)
+          G29.append(temp_row)        
+##########
+for i in range(len(G27)):
+    concatenated_row = G27[i] + G28[i] + G29[i]
+    W9.append(concatenated_row)    
+#######################
+# x3_j nodes
+G30 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          G30.append(temp_row)
+##########
+G31 = []
+for l in range(1, d+1):
+          temp_row = []
+          for j in range(1, 2*n+1):
+                for k in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          G31.append(temp_row)
+##########
+G32 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i+d==k:
+                        w=1
+                    temp_row.append(w)
+          G32.append(temp_row)        
+##########
+for i in range(len(G30)):
+    concatenated_row = G30[i] + G31[i] + G32[i]
+    W9.append(concatenated_row)    
+#######################
+# x4_j nodes
+G33 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          G33.append(temp_row)
+##########
+G34 = []
+for l in range(1, d+1):
+          temp_row = []
+          for j in range(1, 2*n+1):
+                for k in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          G34.append(temp_row)
+##########
+G35 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i+2*d==k:
+                        w=1
+                    temp_row.append(w)
+          G35.append(temp_row)        
+##########
+for i in range(len(G33)):
+    concatenated_row = G33[i] + G34[i] + G35[i] 
+    W9.append(concatenated_row)    
+#######################
+# print("weight matrix for tenth layer/ninth hidden layer")
+# print(W9)
+#####################
+# #Bias matrix for tenth layer/ninth hidden layer
+
+B9 = []
+# bias matrix for Phi
+
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              temp_row.append(w)
+          B9.append(temp_row)
+
+# bias matrix for omega 3
+
+for l in range(0, 2*n+1):
+        temp_row = []
+        for k in range(1):
+            w = 0
+            if l==0:
+                w=2*n+1
+            temp_row.append(w)
+        B9.append(temp_row)
+        
+# bias matrix for x2,x3,x4_j
+
+for i in range(1, 3*d+1):
+        temp_row = []
+        for k in range(1):
+            w = 0
+            temp_row.append(w)
+        B9.append(temp_row)
+       
+#####################       
+# print('Printing B9')
+# for i in B9:
+#     print(i)
+##################################
+L9 = []  # omega 2 nodes
+for i in range(len(W9)):
+    temp_row = []
+    L9_i_entry = np.maximum((np.dot(W9[i], L8)+B9[i]), 0)
+    L9.append(L9_i_entry)
+
+# print('Printing omega 3 nodes for tenth layer/ninth hidden layer')
+# for i in L9:
+#     print(i)
+##############
+# To construct weight matrix for eleventh layer/tenth hidden layer is L10=W10*L9+B10
+W10 = []
+# phi nodes as identity map
+G36 = []
+for j in range(1, d+1):
+    temp_row = []
+    for k in range(1, d+1):
+        w = 0
+        if j==k:
+            w=1
+        temp_row.append(w)
+    G36.append(temp_row)
+##########
+G37 = []
+for j in range(1, d+1):
+    temp_row = []
+    for l in range(0, 2*n+1):
+            w = 0
+            temp_row.append(w)
+    G37.append(temp_row)
+##########
+G38 = []
+for j in range(1, d+1):
+    temp_row = []
+    for l in range(1, 3*d+1):
+            w = 0
+            temp_row.append(w)
+    G38.append(temp_row)    
+##########
+for i in range(len(G36)):
+    concatenated_row = G36[i] + G37[i] + G38[i] 
+    W10.append(concatenated_row)
+# print(W10)
+######################
+# rho 31,32 nodes
+G39 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+      for p in range(2):
+          temp_row = []
+          for k in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+          G39.append(temp_row)
+##########
+G40 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+      for p in range(2):
+          temp_row = []
+          for k in range(0, 2*n+1):# omega 3 nodes
+                    w = 0
+                    temp_row.append(w)
+          G40.append(temp_row)
+##########
+G41 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+      for p in range(2):
+          temp_row = []
+          for k in range(1, 3*d+1):# x2,3,4 nodes
+                    w = 0
+                    temp_row.append(w)
+          G41.append(temp_row)    
+##########
+for i in range(len(G39)):
+    concatenated_row = G39[i] + G40[i] + G41[i]
+    W10.append(concatenated_row)    
+#######################
+# varrho 31,32 nodes
+G42 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+      for p in range(2):
+          temp_row = []
+          for k in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+          G42.append(temp_row)
+##########
+G43 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+      for p in range(2):
+          temp_row = []
+          for k in range(0, 2*n+1):# omega 3 nodes
+                    w = 0
+                    if l==k:
+                        w=1/eps
+                    temp_row.append(w)
+          G43.append(temp_row)
+##########
+G44 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+      for p in range(2):
+          temp_row = []
+          for k in range(1, 3*d+1):# x2,3,4 nodes
+                    w = 0
+                    temp_row.append(w)
+          G44.append(temp_row)    
+##########
+for i in range(len(G42)):
+    concatenated_row = G42[i] + G43[i] + G44[i]
+    W10.append(concatenated_row)    
+#######################
+# x2_j nodes
+G45 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          G45.append(temp_row)
+##########
+G46 = []
+for l in range(1, d+1):
+          temp_row = []
+          for j in range(0, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          G46.append(temp_row)    
+##########
+G47 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i==k:
+                        w=1
+                    temp_row.append(w)
+          G47.append(temp_row)        
+##########
+for i in range(len(G45)):
+    concatenated_row = G45[i] + G46[i] + G47[i]
+    W10.append(concatenated_row)    
+#######################
+# x3_j nodes
+G48 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          G48.append(temp_row)
+##########
+G49 = []
+for l in range(1, d+1):
+          temp_row = []
+          for j in range(0, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          G49.append(temp_row)
+##########
+G50 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i+d==k:
+                        w=1
+                    temp_row.append(w)
+          G50.append(temp_row)        
+##########
+for i in range(len(G48)):
+    concatenated_row = G48[i] + G49[i] + G50[i]
+    W10.append(concatenated_row)    
+#######################
+# x4_j nodes
+G51 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          G51.append(temp_row)
+##########
+G52 = []
+for l in range(1, d+1):
+          temp_row = []
+          for j in range(0, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          G52.append(temp_row)
+##########
+G53 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i+2*d==k:
+                        w=1
+                    temp_row.append(w)
+          G53.append(temp_row)        
+##########
+for i in range(len(G51)):
+    concatenated_row = G51[i] + G52[i] + G53[i] 
+    W10.append(concatenated_row)    
+#######################
+# print("weight matrix for eleventh layer/tenth hidden layer")
+# print(W10)
+#####################
+# #Bias matrix for eleventh layer/tenth hidden layer
+
+B10 = []
+# bias matrix for Phi
+
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              temp_row.append(w)
+          B10.append(temp_row)
+
+# bias matrix for rho 31,32
+
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+          temp_row = []
+          for k in range(1):
+            w = 0
+            if q==0:
+                w=((i-l-1)/eps)+1
+            else:
+                w=(i-l-1)/eps
+            temp_row.append(w)
+          B10.append(temp_row)
+
+# bias matrix for varrho 31,32
+
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for q in range(2):
+          temp_row = []
+          for k in range(1):
+            w = 0
+            if q==0:
+                w=((-i-1)/eps)+1
+            else:
+                w=(-i-1)/eps
+            temp_row.append(w)
+          B10.append(temp_row)        
+# bias matrix for x2,x3,x4_j
+
+for i in range(1, 3*d+1):
+        temp_row = []
+        for k in range(1):
+            w = 0
+            temp_row.append(w)
+        B10.append(temp_row)
+       
+#####################       
+# print('Printing B10')
+# for i in B10:
+#     print(i)
+##################################
+L10 = []  # rho31,32, varroh31,32 nodes
+for i in range(len(W10)):
+    temp_row = []
+    L10_i_entry = np.maximum((np.dot(W10[i], L9)+B10[i]), 0)
+    L10.append(L10_i_entry)
+
+# print('Printing rho31,32, varroh31,32 nodes for eleventh layer/tenth hidden layer')
+# for i in L10:
+#     print(i)
+##############
+# To construct weight matrix for twelfth layer/eleventh hidden layer is L11=W11*L10+B11
+W11 = []
+# Phi nodes as identity map
+H1 = []
+for j in range(1, d+1):
+    temp_row = []
+    for k in range(1, d+1):
+        w = 0
+        if j==k:
+            w=1
+        temp_row.append(w)
+    H1.append(temp_row)
+##########
+H2 = []
+for j in range(1, d+1):
+    temp_row = []
+    for l in range(0, 2*n+1):#rho 31,32 nodes
+        for i in range(1, 2*n+1):
+            for q in range(2):
+                w = 0
+                temp_row.append(w)
+    H2.append(temp_row)
+##########
+H3 = []
+for j in range(1, d+1):
+    temp_row = []
+    for l in range(0, 2*n+1):#varrho 31,32 nodes
+        for i in range(1, 2*n+1):
+            for q in range(2):
+                w = 0
+                temp_row.append(w)
+    H3.append(temp_row)
+##########
+H4 = []
+for j in range(1, d+1):
+    temp_row = []
+    for l in range(1, 3*d+1):#x2,x3,x4_j nodes
+            w = 0
+            temp_row.append(w)
+    H4.append(temp_row)    
+##########
+for i in range(len(H1)):
+    concatenated_row = H1[i] + H2[i] + H3[i]  + H4[i]  
+    W11.append(concatenated_row)
+# print(W11)
+######################
+# Gamma 1 nodes
+H5 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1, d+1):# mu nodes
+                    w = 0
+                    temp_row.append(w)
+          H5.append(temp_row)
+##########
+H6 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#rho 31,32 nodes
+              for j in range(1, 2*n+1):
+                for q in range(2):
+                    w = 0
+                    if l==k and i==j:
+                        if q==0:
+                            w=1
+                        else:
+                            w=-1
+                    temp_row.append(w)
+          H6.append(temp_row)
+##########
+H7 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#varrho 31,32 nodes
+              for j in range(1, 2*n+1):
+                for q in range(2):
+                    w = 0
+                    if l==k and i==j:
+                        if q==0:
+                            w=1
+                        else:
+                            w=-1
+                    temp_row.append(w)
+          H7.append(temp_row)
+##########
+H8 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          H8.append(temp_row)    
+##########
+for i in range(len(H5)):
+    concatenated_row = H5[i] + H6[i] + H7[i] + H8[i]
+    W11.append(concatenated_row)    
+#######################
+# x2_j nodes
+H9 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          H9.append(temp_row)
+##########
+H10 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#rho 31,32 nodes
+              for j in range(1, 2*n+1):
+                for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          H10.append(temp_row)    
+##########
+H11 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#varrho 31,32 nodes
+              for j in range(1, 2*n+1):
+                for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          H11.append(temp_row)    
+##########
+H12 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i==k:
+                        w=1
+                    temp_row.append(w)
+          H12.append(temp_row)        
+##########
+for i in range(len(H9)):
+    concatenated_row = H9[i] + H10[i] + H11[i] + H12[i]
+    W11.append(concatenated_row)    
+#######################
+# x3_j nodes
+H13 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          H13.append(temp_row)
+##########
+H14 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#rho 31,32 nodes
+              for j in range(1, 2*n+1):
+                for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          H14.append(temp_row)    
+##########
+H15 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#varrho 31,32 nodes
+              for j in range(1, 2*n+1):
+                for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          H15.append(temp_row)    
+##########
+H16 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i+d==k:
+                        w=1
+                    temp_row.append(w)
+          H16.append(temp_row)        
+##########
+for i in range(len(H13)):
+    concatenated_row = H13[i] + H14[i] + H15[i] + H16[i]
+    W11.append(concatenated_row)    
+#######################
+# x4_j nodes
+H17 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          H17.append(temp_row)
+##########
+H18 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#rho 31,32 nodes
+              for j in range(1, 2*n+1):
+                for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          H18.append(temp_row)    
+##########
+H19 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#varrho 31,32 nodes
+              for j in range(1, 2*n+1):
+                for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          H19.append(temp_row)    
+##########
+H20 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i+2*d==k:
+                        w=1
+                    temp_row.append(w)
+          H20.append(temp_row)        
+##########
+for i in range(len(H17)):
+    concatenated_row = H17[i] + H18[i] + H19[i] + H20[i]
+    W11.append(concatenated_row)    
+####################### 
+# print("weight matrix for twelfth layer/eleventh hidden layer")
+# print(W11)
+#####################
+# #Bias matrix for twelfth layer/eleventh hidden layer
+
+B11 = []
+# bias matrix for Phi
+
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              temp_row.append(w)
+          B11.append(temp_row)
+
+# bias matrix for Gamma 1
+
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1):
+            w = -1
+            temp_row.append(w)
+          B11.append(temp_row)
+        
+# bias matrix for x2,x3,x4_j
+
+for i in range(1, 3*d+1):
+        temp_row = []
+        for k in range(1):
+            w = 0
+            temp_row.append(w)
+        B11.append(temp_row)
+       
+#####################       
+# print('Printing B11')
+# for i in B11:
+#     print(i)
+##################################
+L11 = []  # Gamma 1 nodes
+for i in range(len(W11)):
+    temp_row = []
+    L11_i_entry = np.maximum((np.dot(W11[i], L10)+B11[i]), 0)
+    L11.append(L11_i_entry)
+##################
+# print('Printing Gamma 1 nodes for twelfth layer/eleventh hidden layer')
+# for i in L11:
+#     print(i)
+##############
+# To construct weight matrix for thirteenth layer/twelfth hidden layer is L12=W12*L11+B12
+W12 = []
+# Phi nodes as identity map
+H21 = []
+for j in range(1, d+1):
+    temp_row = []
+    for k in range(1, d+1):
+        w = 0
+        if j==k:
+            w=1
+        temp_row.append(w)
+    H21.append(temp_row)
+##########
+H22 = []
+for j in range(1, d+1):
+    temp_row = []
+    for l in range(0, 2*n+1):#Gamma 1 nodes
+        for i in range(1, 2*n+1):
+                w = 0
+                temp_row.append(w)
+    H22.append(temp_row)
+##########
+H23 = []
+for j in range(1, d+1):
+    temp_row = []
+    for l in range(1, 3*d+1):#x2,x3,x4_j nodes
+            w = 0
+            temp_row.append(w)
+    H23.append(temp_row)    
+##########
+for i in range(len(H21)):
+    concatenated_row = H21[i] + H22[i] + H23[i]
+    W12.append(concatenated_row)
+# print(W12)
+######################
+# Gamma 1 nodes as identity map
+H24 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1, d+1):# mu nodes
+                    w = 0
+                    temp_row.append(w)
+          H24.append(temp_row)
+##########
+H25 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# Gamma 1 nodes
+              for j in range(1, 2*n+1):
+                    w = 0
+                    if l==k and i==j:
+                            w=1
+                    temp_row.append(w)
+          H25.append(temp_row)
+##########
+H26 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          H26.append(temp_row)    
+##########
+for i in range(len(H24)):
+    concatenated_row = H24[i] + H25[i] + H26[i]
+    W12.append(concatenated_row)    
+#######################
+# Gamma 2 nodes
+H27 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+          H27.append(temp_row)
+##########
+H28 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# Gamma 1 nodes
+              for j in range(1, 2*n+1):
+                    w = 0
+                    if k>l and i==j:
+                        w=1
+                    temp_row.append(w)
+          H28.append(temp_row)
+##########
+H29 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          H29.append(temp_row)    
+##########
+for i in range(len(H27)):
+    concatenated_row = H27[i] + H28[i] + H29[i]
+    W12.append(concatenated_row)    
+#######################
+# x2_j nodes
+H30 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          H30.append(temp_row)
+##########
+H31 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#Gamma 1 nodes
+              for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          H31.append(temp_row)    
+##########
+H32 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i==k:
+                        w=1
+                    temp_row.append(w)
+          H32.append(temp_row)        
+##########
+for i in range(len(H30)):
+    concatenated_row = H30[i] + H31[i] + H32[i]
+    W12.append(concatenated_row)    
+#######################
+# x3_j nodes
+H33 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          H33.append(temp_row)
+##########
+H34 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#Gamma 1 nodes
+              for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          H34.append(temp_row)    
+##########
+H35 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i+d==k:
+                        w=1
+                    temp_row.append(w)
+          H35.append(temp_row)        
+##########
+for i in range(len(H33)):
+    concatenated_row = H33[i] + H34[i] + H35[i]
+    W12.append(concatenated_row)    
+#######################
+# x4_j nodes
+H36 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          H36.append(temp_row)
+##########
+H37 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#Gamma 1 nodes
+              for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          H37.append(temp_row)    
+##########
+H38 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i+2*d==k:
+                        w=1
+                    temp_row.append(w)
+          H38.append(temp_row)        
+##########
+for i in range(len(H36)):
+    concatenated_row = H36[i] + H37[i] + H38[i]
+    W12.append(concatenated_row)    
+####################### 
+# print("weight matrix for thirteenth layer/twelfth hidden layer")
+# print(W12)
+#####################
+# #Bias matrix for thirteenth layer/twelfth hidden layer
+
+B12 = []
+# bias matrix for Phi
+
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              temp_row.append(w)
+          B12.append(temp_row)
+
+# bias matrix for Gamma 1
+
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1):
+            w = 0
+            temp_row.append(w)
+          B12.append(temp_row)
+
+# bias matrix for Gamma 2
+
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1):
+            w = 0
+            temp_row.append(w)
+          B12.append(temp_row) 
+         
+# bias matrix for x2,x3,x4_j
+
+for i in range(1, 3*d+1):
+        temp_row = []
+        for k in range(1):
+            w = 0
+            temp_row.append(w)
+        B12.append(temp_row)
+       
+#####################       
+# print('Printing B12')
+# for i in B12:
+#     print(i)
+##################################
+L12 = []  # Gamma 2 nodes
+for i in range(len(W12)):
+    temp_row = []
+    L12_i_entry = np.maximum((np.dot(W12[i], L11)+B12[i]), 0)
+    L12.append(L12_i_entry)
+##################
+# print('Printing Gamma 2 nodes for thirteenth layer/twelfth hidden layer')
+# for i in L12:
+#     print(i)
+##############
+# To construct weight matrix for fourteenth layer/thirteenth hidden layer is L13=W13*L12+B13
+W13 = []
+# Phi nodes as identity map
+H39 = []
+for j in range(1, d+1):
+    temp_row = []
+    for k in range(1, d+1):
+        w = 0
+        if j==k:
+            w=1
+        temp_row.append(w)
+    H39.append(temp_row)
+##########
+H40 = []
+for j in range(1, d+1):
+    temp_row = []
+    for l in range(0, 2*n+1):#Gamma1 nodes
+        for i in range(1, 2*n+1):
+                w = 0
+                temp_row.append(w)
+    H40.append(temp_row)
+##########
+H41 = []
+for j in range(1, d+1):
+    temp_row = []
+    for l in range(0, 2*n+1):#Gamma 2 nodes
+        for i in range(1, 2*n+1):
+                w = 0
+                temp_row.append(w)
+    H41.append(temp_row)
+##########
+H42 = []
+for j in range(1, d+1):
+    temp_row = []
+    for l in range(1, 3*d+1):#x2,x3,x4_j nodes
+            w = 0
+            temp_row.append(w)
+    H42.append(temp_row)    
+##########
+for i in range(len(H39)):
+    concatenated_row = H39[i] + H40[i] + H41[i] + H42[i]
+    W13.append(concatenated_row)
+# print(W13)
+######################
+# Gamma 3 nodes
+H43 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1, d+1):# phi nodes
+                    w = 0
+                    temp_row.append(w)
+          H43.append(temp_row)
+##########
+H44 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# Gamma 1 nodes
+              for j in range(1, 2*n+1):
+                    w = 0
+                    if k==l and i==j:
+                        w=1
+                    temp_row.append(w)
+          H44.append(temp_row)
+##########
+H45 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# Gamma 2 nodes
+              for j in range(1, 2*n+1):
+                    w = 0
+                    if k==l and i==j:
+                        w=-1
+                    temp_row.append(w)
+          H45.append(temp_row)
+##########
+H46 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          H46.append(temp_row)    
+##########
+for i in range(len(H43)):
+    concatenated_row = H43[i] + H44[i] + H45[i] + H46[i]
+    W13.append(concatenated_row)    
+#######################
+# x2_j nodes
+H47 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          H47.append(temp_row)
+##########
+H48 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#Gamma 1 nodes
+              for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          H48.append(temp_row)    
+##########
+H49 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#Gamma 2 nodes
+              for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          H49.append(temp_row)    
+##########
+H50 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i==k:
+                        w=1
+                    temp_row.append(w)
+          H50.append(temp_row)        
+##########
+for i in range(len(H47)):
+    concatenated_row = H47[i] + H48[i] + H49[i] + H50[i]
+    W13.append(concatenated_row)    
+#######################
+# x3_j nodes
+H51 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          H51.append(temp_row)
+##########
+H52 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#Gamma 1 nodes
+              for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          H52.append(temp_row)    
+##########
+H53 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#Gamma 2 nodes
+              for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          H53.append(temp_row)    
+##########
+H54 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i+d==k:
+                        w=1
+                    temp_row.append(w)
+          H54.append(temp_row)        
+##########
+for i in range(len(H51)):
+    concatenated_row = H51[i] + H52[i] + H53[i] + H54[i]
+    W13.append(concatenated_row)    
+#######################
+# x4_j nodes
+H55 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          H55.append(temp_row)
+##########
+H56 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#Gamma 1 nodes
+              for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          H56.append(temp_row)    
+##########
+H57 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#Gamma 2 nodes
+              for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          H57.append(temp_row)    
+##########
+H58 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i+2*d==k:
+                        w=1
+                    temp_row.append(w)
+          H58.append(temp_row)        
+##########
+for i in range(len(H55)):
+    concatenated_row = H55[i] + H56[i] + H57[i] + H58[i]
+    W13.append(concatenated_row)    
+####################### 
+# print("weight matrix for fourteenth layer/thirteenth hidden layer")
+# print(W13)
+#####################
+# #Bias matrix for fourteenth layer/thirteenth hidden layer
+
+B13 = []
+# bias matrix for phi
+
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              temp_row.append(w)
+          B13.append(temp_row)
+
+# bias matrix for Gamma 3
+
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1):
+            w = 0
+            temp_row.append(w)
+          B13.append(temp_row)
+         
+# bias matrix for x2,x3,x4_j
+
+for i in range(1, 3*d+1):
+        temp_row = []
+        for k in range(1):
+            w = 0
+            temp_row.append(w)
+        B13.append(temp_row)
+       
+#####################       
+# print('Printing B13')
+# for i in B13:
+#     print(i)
+##################################
+L13 = []  # Gamma 3 nodes
+for i in range(len(W13)):
+    temp_row = []
+    L13_i_entry = np.maximum((np.dot(W13[i], L12)+B13[i]), 0)
+    L13.append(L13_i_entry)
+
+# print('Printing Gamma 3 nodes for fourteenth layer/thirteenth hidden layer')
+# for i in L13:
+#     print(i)
+##############
+# To construct weight matrix for fifteenth layer/fourteenth hidden layer is L14=W14*L13+B14
+W14 = []
+# Phi nodes as identity map
+H59 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# Phi nodes
+                    w = 0
+                    if l==k:
+                        w=1
+                    temp_row.append(w)
+          H59.append(temp_row)
+##########
+H60 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# Gamma 3 nodes
+              for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          H60.append(temp_row)
+##########
+H61 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          H61.append(temp_row)    
+##########
+for i in range(len(H59)):
+    concatenated_row = H59[i] + H60[i] + H61[i]
+    W14.append(concatenated_row)    
+#######################
+# Gamma 4 nodes
+C1 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+          C1.append(temp_row)
+##########
+C2 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for j in range(0, 2*n+1):# Gamma 3 nodes
+              for k in range(1, 2*n+1):
+                    w = 0
+                    if l==j and k<=i:
+                        w=1
+                    temp_row.append(w)
+          C2.append(temp_row)
+##########
+C3 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          C3.append(temp_row)    
+##########
+for i in range(len(C1)):
+    concatenated_row = C1[i] + C2[i] + C3[i]
+    W14.append(concatenated_row)    
+#######################
+# Gamma 5 nodes
+H62 = []
+for l in range(0, 2*n+1):
+          temp_row = []
+          for k in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+          H62.append(temp_row)
+##########
+H63 = []
+for l in range(0, 2*n+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# Gamma 3 nodes
+              for j in range(1, 2*n+1):
+                    w = 0
+                    if l==k:
+                        w=1
+                    temp_row.append(w)
+          H63.append(temp_row)
+##########
+H64 = []
+for l in range(0, 2*n+1):
+          temp_row = []
+          for k in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          H64.append(temp_row)    
+##########
+for i in range(len(H62)):
+    concatenated_row = H62[i] + H63[i] + H64[i]
+    W14.append(concatenated_row)    
+#######################
+# mu 31,32 nodes
+C4 = []
+for l in range(0, 2*n+1):
+   for i in range(1, 2*n+1):
+       for q in range(2):
+          temp_row = []
+          for k in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+          C4.append(temp_row)
+##########
+C5 = []
+for l in range(0, 2*n+1):
+   for i in range(1, 2*n+1):
+       for q in range(2):
+          temp_row = []
+          for j in range(0, 2*n+1):# Gamma 3 nodes
+              for k in range(1, 2*n+1):
+                    w = 0
+                    if l==j and k==i:
+                        w=1/eps
+                    temp_row.append(w)
+          C5.append(temp_row)
+##########
+C6 = []
+for l in range(0, 2*n+1):
+   for i in range(1, 2*n+1):
+       for q in range(2):
+          temp_row = []
+          for k in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          C6.append(temp_row)    
+##########
+for i in range(len(C4)):
+    concatenated_row = C4[i] + C5[i] + C6[i]
+    W14.append(concatenated_row)    
+#######################
+# lambda 31,32 nodes
+C7 = []
+for l in range(0, 2*n+1):
+   for i in range(1, 2*n+1):
+       for q in range(2):
+          temp_row = []
+          for k in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+          C7.append(temp_row)
+##########
+C8 = []
+for l in range(0, 2*n+1):
+   for i in range(1, 2*n+1):
+       for q in range(2):
+          temp_row = []
+          for j in range(0, 2*n+1):# Gamma 3 nodes
+              for k in range(1, 2*n+1):
+                    w = 0
+                    if l==j and k==i:
+                        w=-1/eps
+                    temp_row.append(w)
+          C8.append(temp_row)
+##########
+C9 = []
+for l in range(0, 2*n+1):
+   for i in range(1, 2*n+1):
+       for q in range(2):
+          temp_row = []
+          for k in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          C9.append(temp_row)    
+##########
+for i in range(len(C7)):
+    concatenated_row = C7[i] + C8[i] + C9[i]
+    W14.append(concatenated_row)    
+#######################
+# x2_j nodes
+H65 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          H65.append(temp_row)
+##########
+H66 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#Gamma 3 nodes
+              for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          H66.append(temp_row)        
+##########
+H67 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i==k:
+                        w=1
+                    temp_row.append(w)
+          H67.append(temp_row)        
+##########
+for i in range(len(H65)):
+    concatenated_row = H65[i] + H66[i] + H67[i] 
+    W14.append(concatenated_row)    
+#######################
+# x3_j nodes
+H68 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          H68.append(temp_row)
+##########
+H69 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#Gamma 3 nodes
+              for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          H69.append(temp_row)    
+##########
+H70 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i+d==k:
+                        w=1
+                    temp_row.append(w)
+          H70.append(temp_row)        
+##########
+for i in range(len(H68)):
+    concatenated_row = H68[i] + H69[i] + H70[i] 
+    W14.append(concatenated_row)    
+#######################
+# x4_j nodes
+H71 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          H71.append(temp_row)
+##########
+H72 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#Gamma 3 nodes
+              for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          H72.append(temp_row)    
+##########
+H73 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i+2*d==k:
+                        w=1
+                    temp_row.append(w)
+          H73.append(temp_row)        
+##########
+for i in range(len(H71)):
+    concatenated_row = H71[i] + H72[i] + H73[i] 
+    W14.append(concatenated_row)    
+####################### 
+# print("weight matrix for fifteenth layer/fourteenth hidden layer")
+# print(W14)
+#####################
+# #Bias matrix for fifteenth layer/fourteenth hidden layer
+
+B14 = []
+# bias matrix for phi
+
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              temp_row.append(w)
+          B14.append(temp_row)
+
+# bias matrix for Gamma 4
+
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1):
+            w = 0
+            temp_row.append(w)
+          B14.append(temp_row)
+
+# bias matrix for Gamma 5
+
+for l in range(0, 2*n+1):
+          temp_row = []
+          for k in range(1):
+            w = 0
+            temp_row.append(w)
+          B14.append(temp_row)
+
+# mu 31,32 nodes
+
+for l in range(0, 2*n+1):
+   for i in range(1, 2*n+1):
+       for q in range(2):
+          temp_row = []
+          for k in range(1):
+             w = 0
+             if q==0:
+                 w=1
+             temp_row.append(w)
+          B14.append(temp_row)
+
+# lambda 31,32 nodes
+
+for l in range(0, 2*n+1):
+   for i in range(1, 2*n+1):
+       for q in range(2):
+          temp_row = []
+          for k in range(1):
+             w = 0
+             if q==0:
+                 w=1
+             temp_row.append(w)
+          B14.append(temp_row) 
+           
+# bias matrix for x2,x3,x4_j
+
+for i in range(1, 3*d+1):
+        temp_row = []
+        for k in range(1):
+            w = 0
+            temp_row.append(w)
+        B14.append(temp_row)
+       
+#####################       
+# print('Printing B14')
+# for i in B14:
+#     print(i)
+##################################
+L14 = []  # Gamma 4, Gamma 5, mu 31,32 nodes, lambda 31,32 nodesnodes
+for i in range(len(W14)):
+    temp_row = []
+    L14_i_entry = np.maximum((np.dot(W14[i], L13)+B14[i]), 0)
+    L14.append(L14_i_entry)
+
+# print('Printing Gamma 4, Gamma 5, mu 31,32 nodes, lambda 31,32 nodes for fifteenth layer/fourteenth hidden layer')
+# for i in L14:
+#     print(i)
+##############
+# To construct weight matrix for sixteenth layer/fifteenth hidden layer is L15=W15*L14+B15
+W15 = []
+# Phi nodes as identity map
+H74 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# Phi nodes
+                    w = 0
+                    if l==k:
+                        w=1
+                    temp_row.append(w)
+          H74.append(temp_row)
+##########
+C10 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):
+              for i in range(1, 2*n+1):# Gamma 4 nodes
+                    w = 0
+                    temp_row.append(w)
+          C10.append(temp_row)
+##########
+H75 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# Gamma 5 nodes
+                    w = 0
+                    temp_row.append(w)
+          H75.append(temp_row)
+##########
+C11 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# mu 31,32 nodes
+             for i in range(1, 2*n+1):
+                for q in range(2):
+                  w = 0
+                  temp_row.append(w)
+          C11.append(temp_row)
+##########
+C12 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# lambda 31,32 nodes
+             for i in range(1, 2*n+1):
+                for q in range(2):
+                  w = 0
+                  temp_row.append(w)
+          C12.append(temp_row) 
+##########          
+H76 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          H76.append(temp_row)    
+##########
+for i in range(len(H74)):
+    concatenated_row = H74[i]+ C10[i] + H75[i]+ C11[i]+ C12[i] + H76[i]
+    W15.append(concatenated_row)    
+#######################
+# zeta 1 nodes
+C13 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+          C13.append(temp_row)
+##########
+C14 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(0, 2*n+1):
+              for j in range(1, 2*n+1):# Gamma 4 nodes
+                    w = 0
+                    if l==k and i==j:
+                        w=1/2
+                    temp_row.append(w)
+          C14.append(temp_row)
+##########
+C15 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# Gamma 5 nodes
+                    w = 0
+                    temp_row.append(w)
+          C15.append(temp_row)
+##########
+C16 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# mu 31,32 nodes
+             for j in range(1, 2*n+1):
+                for q in range(2):
+                  w = 0
+                  temp_row.append(w)
+          C16.append(temp_row)
+##########
+C17 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# lambda 31,32 nodes
+             for j in range(1, 2*n+1):
+                for q in range(2):
+                  w = 0
+                  temp_row.append(w)
+          C17.append(temp_row) 
+##########
+C18 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          C18.append(temp_row)    
+##########
+for i in range(len(C13)):
+    concatenated_row = C13[i] + C14[i] + C15[i] + C16[i] + C17[i] + C18[i]
+    W15.append(concatenated_row)    
+#######################
+# zeta 2 nodes
+H77 = []
+for l in range(0, 2*n+1):
+          temp_row = []
+          for k in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+          H77.append(temp_row)
+##########
+C19 = []
+for l in range(0, 2*n+1):
+          temp_row = []
+          for k in range(0, 2*n+1):
+              for i in range(1, 2*n+1):# Gamma 4 nodes
+                    w = 0
+                    temp_row.append(w)
+          C19.append(temp_row)
+##########
+H78 = []
+for l in range(0, 2*n+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# Gamma 5 nodes
+                    w = 0
+                    if l==k:
+                        w=1/2
+                    temp_row.append(w)
+          H78.append(temp_row)
+##########
+C20 = []
+for l in range(0, 2*n+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# mu 31,32 nodes
+             for i in range(1, 2*n+1):
+                for q in range(2):
+                  w = 0
+                  temp_row.append(w)
+          C20.append(temp_row)
+##########
+C21 = []
+for l in range(0, 2*n+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# lambda 31,32 nodes
+             for i in range(1, 2*n+1):
+                for q in range(2):
+                  w = 0
+                  temp_row.append(w)
+          C21.append(temp_row) 
+##########
+H79 = []
+for l in range(0, 2*n+1):
+          temp_row = []
+          for k in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          H79.append(temp_row)    
+##########
+for i in range(len(H77)):
+    concatenated_row = H77[i] + C19[i] + H78[i] + C20[i] + C21[i] + H79[i]
+    W15.append(concatenated_row)    
+#######################
+# varsigma 1 nodes
+C22 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+          C22.append(temp_row)
+##########
+C23 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(0, 2*n+1):
+              for j in range(1, 2*n+1):# Gamma 4 nodes
+                    w = 0
+                    temp_row.append(w)
+          C23.append(temp_row)
+##########
+C24 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# Gamma 5 nodes
+                    w = 0
+                    temp_row.append(w)
+          C24.append(temp_row)
+##########
+C25 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# mu 31,32 nodes
+             for j in range(1, 2*n+1):
+                for q in range(2):
+                  w = 0
+                  if l==k and i==j:
+                      if q==0:
+                          w=1
+                      else:
+                          w=-1
+                  temp_row.append(w)
+          C25.append(temp_row)
+##########
+C26 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# lambda 31,32 nodes
+             for j in range(1, 2*n+1):
+                for q in range(2):
+                  w = 0
+                  if l==k and i==j:
+                      if q==0:
+                          w=1
+                      else:
+                          w=-1
+                  temp_row.append(w)
+          C26.append(temp_row) 
+##########
+C27 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          C27.append(temp_row)    
+##########
+for i in range(len(C22)):
+    concatenated_row = C22[i] + C23[i] + C24[i] + C25[i] + C26[i] + C27[i]
+    W15.append(concatenated_row)    
+#######################
+# x2_j nodes
+H80 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          H80.append(temp_row)
+##########
+C28 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#Gamma 4 nodes
+             for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          C28.append(temp_row)        
+##########
+H81 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#Gamma 5 nodes
+                    w = 0
+                    temp_row.append(w)
+          H81.append(temp_row)        
+##########
+C29 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# mu 31,32 nodes
+             for i in range(1, 2*n+1):
+                for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          C29.append(temp_row)        
+##########
+C30 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# lambda 31,32 nodes
+             for i in range(1, 2*n+1):
+                for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          C30.append(temp_row)        
+##########
+H82 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i==k:
+                        w=1
+                    temp_row.append(w)
+          H82.append(temp_row)        
+##########
+for i in range(len(H80)):
+    concatenated_row = H80[i] + C28[i] +H81[i] +C29[i] + C30[i] + H82[i] 
+    W15.append(concatenated_row)    
+#######################
+# x3_j nodes
+H83 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          H83.append(temp_row)
+##########
+C31 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#Gamma 4 nodes
+             for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          C31.append(temp_row)        
+##########
+H84 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#Gamma 5 nodes
+                    w = 0
+                    temp_row.append(w)
+          H84.append(temp_row)    
+##########
+C32 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# mu 31,32 nodes
+             for i in range(1, 2*n+1):
+                for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          C32.append(temp_row)        
+##########
+C33 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# lambda 31,32 nodes
+             for i in range(1, 2*n+1):
+                for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          C33.append(temp_row)        
+##########
+H85 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i+d==k:
+                        w=1
+                    temp_row.append(w)
+          H85.append(temp_row)        
+##########
+for i in range(len(H83)):
+    concatenated_row = H83[i]+ C31[i] + H84[i]+ C32[i]+ C33[i] + H85[i] 
+    W15.append(concatenated_row)    
+#######################
+# x4_j nodes
+H86 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          H86.append(temp_row)
+##########
+C34 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#Gamma 4 nodes
+             for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          C34.append(temp_row)        
+##########
+H87 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#Gamma 5 nodes
+                    w = 0
+                    temp_row.append(w)
+          H87.append(temp_row)    
+##########
+C35 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# mu 31,32 nodes
+             for i in range(1, 2*n+1):
+                for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          C35.append(temp_row)        
+##########
+C36 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# lambda 31,32 nodes
+             for i in range(1, 2*n+1):
+                for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          C36.append(temp_row)        
+##########
+H88 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i+2*d==k:
+                        w=1
+                    temp_row.append(w)
+          H88.append(temp_row)        
+##########
+for i in range(len(H86)):
+    concatenated_row = H86[i]+ C34[i] + H87[i]+ C35[i]+ C36[i] + H88[i] 
+    W15.append(concatenated_row)    
+####################### 
+# print("weight matrix for sixteenth layer/fifteenth hidden layer")
+# print(W15)
+#####################
+# #Bias matrix for sixteenth layer/fifteenth hidden layer
+
+B15 = []
+# bias matrix for Phi
+
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              temp_row.append(w)
+          B15.append(temp_row)
+
+# bias matrix for zeta 1
+
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1):
+            w = 0
+            temp_row.append(w)
+          B15.append(temp_row)
+
+# bias matrix for zeta 2
+
+for l in range(0, 2*n+1):
+          temp_row = []
+          for k in range(1):
+            w = 0
+            temp_row.append(w)
+          B15.append(temp_row)
+          
+#  bias matrix for varsigma 1 nodes
+
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+       temp_row = []
+       for k in range(1):
+         w = -1
+         temp_row.append(w)
+       B15.append(temp_row)            
+# bias matrix for x2,x3,x4_j
+
+for i in range(1, 3*d+1):
+        temp_row = []
+        for k in range(1):
+            w = 0
+            temp_row.append(w)
+        B15.append(temp_row)
+       
+#####################       
+# print('Printing B15')
+# for i in B15:
+#     print(i)
+##################################
+L15 = []  # zeta 1, zeta 2, varsigma 1 nodes
+for i in range(len(W15)):
+    temp_row = []
+    L15_i_entry = np.maximum((np.dot(W15[i], L14)+B15[i]), 0)
+    L15.append(L15_i_entry)
+####################
+# print('Printing zeta 1, zeta 2, varsigma 1 nodes for sixteenth layer/fifteenth hidden layer')
+# for i in L15:
+#     print(i)
+##############
+# To construct weight matrix for seventeenth layer/sixteenth hidden layer is L16=W16*L15+B16
+W16 = []
+# Phi nodes as identity map
+H89 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# Phi nodes
+                    w = 0
+                    if l==k:
+                        w=1
+                    temp_row.append(w)
+          H89.append(temp_row)
+##########
+C37 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# zeta 1 nodes
+             for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          C37.append(temp_row)
+##########
+H90 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# zeta 2 nodes
+                    w = 0
+                    temp_row.append(w)
+          H90.append(temp_row)
+##########
+C38 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):# varsigma 1 nodes
+             for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          C38.append(temp_row)
+##########
+H91 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          H91.append(temp_row)    
+##########
+for i in range(len(H89)):
+    concatenated_row = H89[i]+ C37[i] + H90[i]+ C38[i] + H91[i]
+    W16.append(concatenated_row)    
+#######################
+# rho 41,42
+H92 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, d+1):# mu nodes
+                    w = 0
+                    temp_row.append(w)
+            H92.append(temp_row)
+##########
+C39 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+            temp_row = []
+            for i in range(0, 2*n+1):# zeta 1 nodes
+               for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+            C39.append(temp_row)
+##########
+H93 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+            temp_row = []
+            for i in range(0, 2*n+1):# zeta 2 nodes
+                    w = 0
+                    if l==i:
+                        w=-1/eps
+                    temp_row.append(w)
+            H93.append(temp_row)
+##########
+C40 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+            temp_row = []
+            for i in range(0, 2*n+1):# varsigma 1 nodes
+               for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+            C40.append(temp_row)
+##########
+H94 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+            H94.append(temp_row)    
+##########
+for i in range(len(H92)):
+    concatenated_row = H92[i] + C39[i] + H93[i] + C40[i] + H94[i]
+    W16.append(concatenated_row)    
+#######################
+# varrho 41,42
+H95 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+            H95.append(temp_row)
+##########
+C41 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+            temp_row = []
+            for i in range(0, 2*n+1):# zeta 1 nodes
+               for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+            C41.append(temp_row)
+##########
+H96 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+            temp_row = []
+            for i in range(0, 2*n+1):# zeta 2 nodes
+                    w = 0
+                    if l==i:
+                        w=1/eps
+                    temp_row.append(w)
+            H96.append(temp_row)
+##########
+C42 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+            temp_row = []
+            for i in range(0, 2*n+1):# varsigma 1 nodes
+               for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+            C42.append(temp_row)
+##########
+H97 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+            H97.append(temp_row)    
+##########
+for i in range(len(H95)):
+    concatenated_row = H95[i] +C41[i] + H96[i]+ C42[i] + H97[i]
+    W16.append(concatenated_row)    
+#######################
+# rho 51,52
+H98 = []
+for l in range(0, 2*n+1):
+    for k in range(1, d+1):
+        for q in range(2):
+            temp_row = []
+            for j in range(1, d+1):# Phi nodes
+                    w = 0
+                    if k==j:
+                        w=-1/eps
+                    temp_row.append(w)
+            H98.append(temp_row)
+##########
+C43 = []
+for l in range(0, 2*n+1):
+    for k in range(1, d+1):
+        for q in range(2):
+            temp_row = []
+            for i in range(0, 2*n+1):# zeta 1 nodes
+               for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+            C43.append(temp_row)
+##########
+H99 = []
+for l in range(0, 2*n+1):
+    for k in range(1, d+1):
+        for q in range(2):
+            temp_row = []
+            for i in range(0, 2*n+1):# zeta 2 nodes
+                    w = 0
+                    temp_row.append(w)
+            H99.append(temp_row)
+##########
+C44 = []
+for l in range(0, 2*n+1):
+    for k in range(1, d+1):
+        for q in range(2):
+            temp_row = []
+            for i in range(0, 2*n+1):# varsigma 1 nodes
+               for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+            C44.append(temp_row)
+##########
+H100 = []
+for l in range(0, 2*n+1):
+    for k in range(1, d+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+            H100.append(temp_row)    
+##########
+for i in range(len(H98)):
+    concatenated_row = H98[i] + C43[i] +H99[i] +C44[i] + H100[i]
+    W16.append(concatenated_row)    
+#######################
+# varrho 51,52
+H101 = []
+for l in range(0, 2*n+1):
+    for k in range(1, d+1):
+        for q in range(2):
+            temp_row = []
+            for j in range(1, d+1):# Phi nodes
+                    w = 0
+                    if k==j:
+                        w=1/eps
+                    temp_row.append(w)
+            H101.append(temp_row)
+##########
+C45 = []
+for l in range(0, 2*n+1):
+    for k in range(1, d+1):
+        for q in range(2):
+            temp_row = []
+            for i in range(0, 2*n+1):# zeta 1 nodes
+               for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+            C45.append(temp_row)
+##########
+H102 = []
+for l in range(0, 2*n+1):
+    for k in range(1, d+1):
+        for q in range(2):
+            temp_row = []
+            for i in range(0, 2*n+1):# zeta 2 nodes
+                    w = 0
+                    temp_row.append(w)
+            H102.append(temp_row)
+##########
+C46 = []
+for l in range(0, 2*n+1):
+    for k in range(1, d+1):
+        for q in range(2):
+            temp_row = []
+            for i in range(0, 2*n+1):# varsigma 1 nodes
+               for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+            C46.append(temp_row)
+##########
+H103 = []
+for l in range(0, 2*n+1):
+    for k in range(1, d+1):
+        for q in range(2):
+            temp_row = []
+            for k in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+            H103.append(temp_row)    
+##########
+for i in range(len(H101)):
+    concatenated_row = H101[i] +C45[i] + H102[i] +C46[i] + H103[i]
+    W16.append(concatenated_row)    
+#######################
+# Gamma 6
+C47 = []
+for l in range(0, 2*n+1):
+    for k in range(1, 2*n+1):
+            temp_row = []
+            for j in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+            C47.append(temp_row)
+##########
+C48 = []
+for l in range(0, 2*n+1):
+    for k in range(1, 2*n+1):
+            temp_row = []
+            for i in range(0, 2*n+1):# zeta 1 nodes
+               for j in range(1, 2*n+1):
+                    w = 0
+                    if l==i and k==j:
+                        w=1
+                    temp_row.append(w)
+            C48.append(temp_row)
+##########
+C49 = []
+for l in range(0, 2*n+1):
+    for k in range(1, 2*n+1):
+            temp_row = []
+            for i in range(0, 2*n+1):# zeta 2 nodes
+                    w = 0
+                    temp_row.append(w)
+            C49.append(temp_row)
+##########
+C50 = []
+for l in range(0, 2*n+1):
+    for k in range(1, 2*n+1):
+            temp_row = []
+            for i in range(0, 2*n+1):# varsigma 1 nodes
+               for j in range(1, 2*n+1):
+                    w = 0
+                    if l==i and k==j:
+                        w=-C
+                    temp_row.append(w)
+            C50.append(temp_row)
+##########
+C51 = []
+for l in range(0, 2*n+1):
+    for k in range(1, 2*n+1):
+            temp_row = []
+            for k in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+            C51.append(temp_row)    
+##########
+for i in range(len(C47)):
+    concatenated_row = C47[i] +C48[i] + C49[i] +C50[i] + C51[i]
+    W16.append(concatenated_row)    
+#######################
+# x2_j nodes
+H104 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          H104.append(temp_row)
+##########
+C52=[]
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# zeta 1 nodes
+             for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          C52.append(temp_row)        
+##########
+H105 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#zeta 2 nodes
+                    w = 0
+                    temp_row.append(w)
+          H105.append(temp_row)        
+##########
+C53 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 1 nodes
+             for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          C53.append(temp_row)        
+##########
+H106 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i==k:
+                        w=1
+                    temp_row.append(w)
+          H106.append(temp_row)        
+##########
+for i in range(len(H104)):
+    concatenated_row = H104[i] +C52[i] + H105[i] +C53[i] + H106[i] 
+    W16.append(concatenated_row)    
+#######################
+# x3_j nodes
+H107 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          H107.append(temp_row)
+##########
+C53 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# zeta 1 nodes
+             for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          C53.append(temp_row)    
+##########
+H108 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#zeta 2 nodes
+                    w = 0
+                    temp_row.append(w)
+          H108.append(temp_row)    
+##########
+C54 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 1 nodes
+             for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          C54.append(temp_row)    
+##########
+H109 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i+d==k:
+                        w=1
+                    temp_row.append(w)
+          H109.append(temp_row)        
+##########
+for i in range(len(H107)):
+    concatenated_row = H107[i] +C53[i] + H108[i] +C54[i] + H109[i] 
+    W16.append(concatenated_row)    
+#######################
+# x4_j nodes
+H110 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          H110.append(temp_row)
+##########
+C55 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# zeta 1 nodes
+             for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          C55.append(temp_row)    
+##########
+H111 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(0, 2*n+1):#zeta 2 nodes
+                    w = 0
+                    temp_row.append(w)
+          H111.append(temp_row)    
+##########
+C56 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 1 nodes
+             for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          C56.append(temp_row)    
+##########
+H112 = []
+for i in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if i+2*d==k:
+                        w=1
+                    temp_row.append(w)
+          H112.append(temp_row)        
+##########
+for i in range(len(H110)):
+    concatenated_row = H110[i] +C55[i] + H111[i] +C56[i] + H112[i] 
+    W16.append(concatenated_row)    
+####################### 
+# print("weight matrix for seventeenth layer/sixteenth hidden layer")
+# print(W16)
+#####################
+# #Bias matrix for seventeenth layer/sixteenth hidden layer
+
+B16 = []
+# bias matrix for Phi
+
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              temp_row.append(w)
+          B16.append(temp_row)
+
+# bias matrix for rho 41,42 nodes
+
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1):
+            w = 0
+            if q==0:
+                w=(k/eps)+1
+            else:
+                  w=k/eps
+            temp_row.append(w)
+          B16.append(temp_row)
+
+# bias matrix for varrho 41,42 nodes
+
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1):
+            w = 0
+            if q==0:
+                w=(-k/eps)+1
+            else:
+                  w=-k/eps
+            temp_row.append(w)
+          B16.append(temp_row)
+
+# bias matrix for varrho 51,52 nodes
+
+for l in range(0, 2*n+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1):
+            w = 0
+            if q==0:
+                w=(l/eps)+1
+            else:
+                  w=l/eps
+            temp_row.append(w)
+          B16.append(temp_row) 
+
+# bias matrix for varrho 51,52 nodes
+
+for l in range(0, 2*n+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1):
+            w = 0
+            if q==0:
+                w=(-l/eps)+1
+            else:
+                  w=-l/eps
+            temp_row.append(w)
+          B16.append(temp_row)   
+
+# bias matrix for Gamma 6 nodes
+
+for l in range(0, 2*n+1):
+    for k in range(1, 2*n+1):
+          temp_row = []
+          for i in range(1):
+            w = 0
+            temp_row.append(w)
+          B16.append(temp_row)             
+# bias matrix for x2,x3,x4_j
+
+for i in range(1, 3*d+1):
+        temp_row = []
+        for k in range(1):
+            w = 0
+            temp_row.append(w)
+        B16.append(temp_row)
+       
+#####################       
+# print('Printing B16')
+# for i in B16:
+#     print(i)
+##################################
+L16 = []  # rho 41,42, varrho 41,42 nodes,rho 51,52 nodes, varrho 51,52 nodes
+for i in range(len(W16)):
+    temp_row = []
+    L16_i_entry = np.maximum((np.dot(W16[i], L15)+B16[i]), 0)
+    L16.append(L16_i_entry)
+
+# print('Printing rho 41,42, varrho 41,42 nodes,rho 51,52 nodes, varrho 51,52 nodes for seventeenth layer/sixteenth hidden layer')
+# for i in L16:
+#     print(i)
+##############
+# To construct weight matrix for eighteenth layer/seventeenth hidden layer is L16=W16*L15+B16
+W17 = []
+# Phi nodes as identity map
+I1 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# Phi nodes
+                    w = 0
+                    if l==k:
+                        w=1
+                    temp_row.append(w)
+          I1.append(temp_row)
+##########
+I2 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# rho 41,42
+              for k in range(1, n+1):
+                  for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          I2.append(temp_row)
+##########
+I3 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varrho 41,42
+              for k in range(1, n+1):
+                  for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          I3.append(temp_row)
+##########
+I4 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# rho 51,52
+              for k in range(1, d+1):
+                for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          I4.append(temp_row)
+##########
+I5 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varrho 51,52
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          I5.append(temp_row)
+##########
+C56 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Gamma 6
+              for k in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          C56.append(temp_row)
+##########
+I6 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          I6.append(temp_row)    
+##########
+for i in range(len(I1)):
+    concatenated_row = I1[i] + I2[i] + I3[i]+ I4[i] + I5[i] + C56[i] + I6[i]
+    W17.append(concatenated_row)    
+# #######################
+# Tau 2 nodes 
+I7 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for j in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+          I7.append(temp_row)
+##########
+I8 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# rho 41,42
+              for j in range(1, n+1):
+                for q in range(2):
+                    w = 0
+                    if l==i and k==j:
+                        if q==0:
+                            w=1
+                        else:
+                            w=-1
+                    temp_row.append(w)
+          I8.append(temp_row)
+##########
+I9 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varrho 41,42
+              for j in range(1, n+1):
+                for q in range(2):
+                    w = 0
+                    if l==i and k==j:
+                        if q==0:
+                            w=1
+                        else:
+                            w=-1
+                    temp_row.append(w)
+          I9.append(temp_row)
+##########
+I10 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# rho 51,52
+              for j in range(1, d+1):
+                  for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          I10.append(temp_row)
+##########
+I11 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varrho 51,52
+              for j in range(1, d+1):
+                  for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          I11.append(temp_row)
+##########
+C57 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 6
+              for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          C57.append(temp_row)
+##########
+I12 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          I12.append(temp_row)    
+##########
+for i in range(len(I7)):
+    concatenated_row = I7[i] + I8[i] + I9[i]+ I10[i] + I11[i] + C57[i] + I12[i]
+    W17.append(concatenated_row)       
+#######################
+# Tau 3 nodes 
+I13 = []
+for l in range(0, 2*n+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for r in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+          I13.append(temp_row)
+##########
+I14 = []
+for l in range(0, 2*n+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# rho 41,42
+              for j in range(1, n+1):
+                  for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          I14.append(temp_row)
+##########
+I15 = []
+for l in range(0, 2*n+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varrho 41,42
+              for j in range(1, n+1):
+                for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          I15.append(temp_row)
+##########
+I16 = []
+for l in range(0, 2*n+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# rho 51,52
+              for j in range(1, d+1):
+                  for q in range(2):
+                    w = 0
+                    if l==i and k==j:
+                        if q==0:
+                            w=1
+                        else:
+                            w=-1
+                    temp_row.append(w)
+          I16.append(temp_row)
+##########
+I17 = []
+for l in range(0, 2*n+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varrho 51,52
+              for j in range(1, d+1):
+                  for q in range(2):
+                    w = 0
+                    if l==i and k==j:
+                        if q==0:
+                            w=1
+                        else:
+                            w=-1
+                    temp_row.append(w)
+          I17.append(temp_row)
+##########
+C58 = []
+for l in range(0, 2*n+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 6
+              for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          C58.append(temp_row)
+##########
+I18 = []
+for l in range(0, 2*n+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          I18.append(temp_row)    
+##########
+for i in range(len(I13)):
+    concatenated_row = I13[i] + I14[i] + I15[i]+ I16[i] + I17[i] + C58[i] + I18[i]
+    W17.append(concatenated_row)    
+#######################
+# mu 41,42 nodes 
+C59 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+                C59.append(temp_row)
+##########
+C60 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(0, 2*n+1):# rho 41,42
+                  for j in range(1, n+1):
+                    for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+                C60.append(temp_row)
+##########
+C61 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(0, 2*n+1):# varrho 41,42
+                  for j in range(1, n+1):
+                    for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+                C61.append(temp_row)
+##########
+C62 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(0, 2*n+1):# rho 51,52
+                  for j in range(1, d+1):
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+                C62.append(temp_row)
+##########
+C63 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(0, 2*n+1):# varrho 51,52
+                  for j in range(1, d+1):
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+                C63.append(temp_row)
+##########
+C64 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(0, 2*n+1):# Gamma 6
+                  for j in range(1, 2*n+1):
+                      w = 0
+                      if l==r and i==j:
+                          w=1/eps
+                      temp_row.append(w)
+                C64.append(temp_row)
+##########
+C65 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+                C65.append(temp_row)    
+##########
+for i in range(len(C59)):
+    concatenated_row = C59[i] + C60[i] + C61[i]+ C62[i] + C63[i] + C64[i] + C65[i]
+    W17.append(concatenated_row)    
+#######################
+# lambda 41,42 nodes 
+C66 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+                C66.append(temp_row)
+##########
+C67 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(0, 2*n+1):# rho 41,42
+                  for j in range(1, n+1):
+                    for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+                C67.append(temp_row)
+##########
+C68 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(0, 2*n+1):# varrho 41,42
+                  for j in range(1, n+1):
+                    for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+                C68.append(temp_row)
+##########
+C69 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(0, 2*n+1):# rho 51,52
+                  for j in range(1, d+1):
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+                C69.append(temp_row)
+##########
+C70 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(0, 2*n+1):# varrho 51,52
+                  for j in range(1, d+1):
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+                C70.append(temp_row)
+##########
+C71 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(0, 2*n+1):# Gamma 6
+                  for j in range(1, 2*n+1):
+                      w = 0
+                      if l==r and i==j:
+                          w=-1/eps
+                      temp_row.append(w)
+                C71.append(temp_row)
+##########
+C72 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+                C72.append(temp_row)    
+##########
+for i in range(len(C66)):
+    concatenated_row = C66[i] + C67[i] + C68[i]+ C69[i] + C70[i] + C71[i] + C72[i]
+    W17.append(concatenated_row)    
+#######################
+# mu 51,52 nodes 
+C73 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+                C73.append(temp_row)
+##########
+C74 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(0, 2*n+1):# rho 41,42
+                  for j in range(1, n+1):
+                    for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+                C74.append(temp_row)
+##########
+C75 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(0, 2*n+1):# varrho 41,42
+                  for j in range(1, n+1):
+                    for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+                C75.append(temp_row)
+##########
+C76 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(0, 2*n+1):# rho 51,52
+                  for j in range(1, d+1):
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+                C76.append(temp_row)
+##########
+C77 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(0, 2*n+1):# varrho 51,52
+                  for j in range(1, d+1):
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+                C77.append(temp_row)
+##########
+C78 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(0, 2*n+1):# Gamma 6
+                  for j in range(1, 2*n+1):
+                      w = 0
+                      if l==r and i==j:
+                          w=1/eps
+                      temp_row.append(w)
+                C78.append(temp_row)
+##########
+C79 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+                C79.append(temp_row)    
+##########
+for i in range(len(C73)):
+    concatenated_row = C73[i] + C74[i] + C75[i]+ C76[i] + C77[i] + C78[i] + C79[i]
+    W17.append(concatenated_row)    
+#######################
+# lambda 51,52 nodes 
+C80 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+                C80.append(temp_row)
+##########
+C81 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(0, 2*n+1):# rho 41,42
+                  for j in range(1, n+1):
+                    for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+                C81.append(temp_row)
+##########
+C82 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(0, 2*n+1):# varrho 41,42
+                  for j in range(1, n+1):
+                    for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+                C82.append(temp_row)
+##########
+C83 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(0, 2*n+1):# rho 51,52
+                  for j in range(1, d+1):
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+                C83.append(temp_row)
+##########
+C84 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(0, 2*n+1):# varrho 51,52
+                  for j in range(1, d+1):
+                      for p in range(2):
+                        w = 0
+                        temp_row.append(w)
+                C84.append(temp_row)
+##########
+C85 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(0, 2*n+1):# Gamma 6
+                  for j in range(1, 2*n+1):
+                      w = 0
+                      if l==r and i==j:
+                          w=-1/eps
+                      temp_row.append(w)
+                C85.append(temp_row)
+##########
+C86 = []
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+                temp_row = []
+                for r in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+                C86.append(temp_row)    
+##########
+for i in range(len(C80)):
+    concatenated_row = C80[i] + C81[i] + C82[i]+ C83[i] + C84[i] + C85[i] + C86[i]
+    W17.append(concatenated_row)    
+#######################
+# x2_j nodes
+I19 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          I19.append(temp_row)
+##########
+I20 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# rho 41,42
+              for j in range(1, n+1):
+                  for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          I20.append(temp_row)        
+##########
+I21 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varrho 41,42
+              for j in range(1, n+1):
+                  for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          I21.append(temp_row)        
+##########
+I22= []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# rho 51,52
+              for j in range(1, d+1):
+                  for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          I22.append(temp_row)        
+##########
+I23 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varrho 51,52
+              for j in range(1, d+1):
+                  for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          I23.append(temp_row)        
+##########
+C87 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 6
+              for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          C87.append(temp_row)        
+##########
+I24 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if j==k:
+                        w=1
+                    temp_row.append(w)
+          I24.append(temp_row)             
+##########
+for i in range(len(I19)):
+    concatenated_row = I19[i] + I20[i] + I21[i]+ I22[i] + I23[i] + C87[i] + I24[i]
+    W17.append(concatenated_row)    
+#######################
+# x3_j nodes
+I25 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          I25.append(temp_row)
+##########
+I26 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# rho 41,42
+              for j in range(1, n+1):
+                for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          I26.append(temp_row)        
+##########
+I27 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varrho 41,42
+              for j in range(1, n+1):
+                  for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          I27.append(temp_row)        
+##########
+I28= []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# rho 51,52
+              for j in range(1, d+1):
+                for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          I28.append(temp_row)        
+##########
+I29 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varrho 51,52
+              for j in range(1, d+1):
+                for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          I29.append(temp_row)        
+##########
+C88 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 6
+              for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          C88.append(temp_row)        
+##########
+I30 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if j+d==k:
+                        w=1
+                    temp_row.append(w)
+          I30.append(temp_row)        
+##########
+for i in range(len(I25)):
+    concatenated_row = I25[i] + I26[i] + I27[i]+ I28[i] + I29[i] + C88[i] + I30[i]
+    W17.append(concatenated_row)    
+#######################
+# x4_j nodes
+I31 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          I31.append(temp_row)
+##########
+I32 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# rho 41,42
+              for j in range(1, n+1):
+                  for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          I32.append(temp_row)        
+##########
+I33 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varrho 41,42
+              for j in range(1, n+1):
+                  for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          I33.append(temp_row)        
+##########
+I34= []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# rho 51,52
+              for j in range(1, d+1):
+                  for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          I34.append(temp_row)        
+##########
+I35 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varrho 51,52
+              for j in range(1, d+1):
+                for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          I35.append(temp_row)        
+##########
+C89 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 6
+              for j in range(1, 2*n+1):
+                    w = 0
+                    temp_row.append(w)
+          C89.append(temp_row)        
+##########
+I36 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if j+2*d==k:
+                        w=1
+                    temp_row.append(w)
+          I36.append(temp_row)        
+##########
+for i in range(len(I31)):
+    concatenated_row = I31[i] + I32[i] + I33[i]+ I34[i] + I35[i] + C89[i] + I36[i]
+    W17.append(concatenated_row)    
+#######################
+# print("weight matrix for eighteenth layer/seventeenth hidden layer")
+# print(W17)
+#####################
+
+# #Bias matrix for eighteenth layer/seventeenth hidden layer
+
+B17 = []
+# bias matrix for Phi
+
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              temp_row.append(w)
+          B17.append(temp_row)
+
+# bias matrix for tau2 nodes
+
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1):
+            w = -1
+            temp_row.append(w)
+          B17.append(temp_row)
+
+# bias matrix for tau3 nodes
+
+for l in range(0, 2*n+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+            w = -1
+            temp_row.append(w)
+          B17.append(temp_row)   
+
+# bias matrix for mu 41,42 nodes
+
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+              temp_row = []
+              for r in range(1):
+                w = 0
+                if q==0:
+                    w=1/(2*eps)-(k/eps)+1
+                else:
+                    w=1/(2*eps)-(k/eps) 
+                temp_row.append(w)
+              B17.append(temp_row)  
+              
+# bias matrix for lambda 41,42 nodes
+
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+              temp_row = []
+              for r in range(1):
+                w = 0
+                if q==0:
+                    w=-1/(2*eps)+(k/eps)+1
+                else:
+                    w=-1/(2*eps)+(k/eps) 
+                temp_row.append(w)
+              B17.append(temp_row)  
+
+# bias matrix for mu 51,52 nodes
+
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+              temp_row = []
+              for r in range(1):
+                w = 0
+                if q==0:
+                    w=-(k/eps)+1
+                else:
+                    w=-(k/eps) 
+                temp_row.append(w)
+              B17.append(temp_row)  
+              
+# bias matrix for lambda 51,52 nodes
+
+for l in range(0, 2*n+1):
+    for i in range(1, 2*n+1):
+        for k in range(1, n+1):
+            for q in range(2):
+              temp_row = []
+              for r in range(1):
+                w = 0
+                if q==0:
+                    w=(k/eps)+1
+                else:
+                    w=(k/eps) 
+                temp_row.append(w)
+              B17.append(temp_row)  
+              
+# bias matrix for x2,x3,x4_j
+
+for j in range(1, 3*d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B17.append(temp_row)   
+# #####################       
+# print('Printing B17')
+# for i in B17:
+#     print(i)
+##################################
+L17 = []  # tau2, tau 3, mu 41,42, lambda 41,42, mu51,52, lambda 61,62 nodes
+for i in range(len(W17)):
+    temp_row = []
+    L17_i_entry = np.maximum((np.dot(W17[i], L16)+B17[i]), 0)
+    L17.append(L17_i_entry)
+###############
+# print('Printing tau2, tau 3, mu 41,42, lambda 41,42, mu51,52, lambda 61,62 nodes for eighteenth layer/seventeenth hidden layer')
+# for i in L17:
+#     print(i)
+##############
+# To construct weight matrix for ninteenth layer/eighteenth hidden layer is L18=W18*L17+B18
+W18 = []
+# Phi nodes as identity map
+I37 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# Phi nodes
+                    w = 0
+                    if l==k:
+                        w=1
+                    temp_row.append(w)
+          I37.append(temp_row)
+##########
+I38 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# tau2
+              for k in range(1, n+1):
+                    w = 0
+                    temp_row.append(w)
+          I38.append(temp_row)
+##########
+I39 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# tau3
+              for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          I39.append(temp_row)
+##########
+C90 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): #mu 41,42
+              for i in range(1, 2*n+1):
+                  for k in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C90.append(temp_row)
+##########
+C91 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): #lambda 41,42
+              for i in range(1, 2*n+1):
+                  for k in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C91.append(temp_row)
+##########
+C92 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): #mu 51,52
+              for i in range(1, 2*n+1):
+                  for k in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C92.append(temp_row)
+##########
+C93 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): #lambda 51,52
+              for i in range(1, 2*n+1):
+                  for k in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C93.append(temp_row)
+##########
+I40 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          I40.append(temp_row)    
+##########
+for i in range(len(I37)):
+    concatenated_row = I37[i] + I38[i] + I39[i]+ C90[i] +C91[i] +C92[i] +C93[i] + I40[i]
+    W18.append(concatenated_row)    
+#######################
+# zeta 3 nodes 
+I41 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for j in range(1, d+1): 
+          temp_row = []
+          for i in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+          I41.append(temp_row)
+##########
+I42 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for j in range(1, d+1): 
+          temp_row = []
+          for p in range(0, 2*n+1):# tau 2
+              for q in range(1, n+1):
+                    w = 0
+                    if l==p and k==q:
+                            w=k
+                    temp_row.append(w)
+          I42.append(temp_row)
+##########
+I43 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for j in range(1, d+1): 
+          temp_row = []
+          for p in range(0, 2*n+1):# tau 3
+              for q in range(1, d+1):
+                    w = 0
+                    if l==p and j==q:
+                            w=k
+                    temp_row.append(w)
+          I43.append(temp_row)
+##########
+C94 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for j in range(1, d+1): 
+          temp_row = []
+          for s in range(0, 2*n+1): #mu 41,42
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C94.append(temp_row)    
+##########
+C95 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for j in range(1, d+1): 
+          temp_row = []
+          for s in range(0, 2*n+1): #lambda 41,42
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C95.append(temp_row)    
+##########
+C96 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for j in range(1, d+1): 
+          temp_row = []
+          for s in range(0, 2*n+1): #mu 51,52
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C96.append(temp_row)    
+##########
+C97 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for j in range(1, d+1): 
+          temp_row = []
+          for s in range(0, 2*n+1): #lambda 51,52
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C97.append(temp_row)    
+##########
+I44 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for j in range(1, d+1): 
+          temp_row = []
+          for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          I44.append(temp_row)    
+##########
+for i in range(len(I41)):
+    concatenated_row = I41[i] + I42[i] + I43[i]+ C94[i] +C95[i] +C96[i] +C97[i] + I44[i] 
+    W18.append(concatenated_row)    
+#######################
+# Gamma 7 nodes 
+C98 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+          C98.append(temp_row)
+##########
+C99 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1): 
+          temp_row = []
+          for p in range(0, 2*n+1):# tau 2
+              for q in range(1, n+1):
+                    w = 0
+                    temp_row.append(w)
+          C99.append(temp_row)
+##########
+C100 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1): 
+          temp_row = []
+          for p in range(0, 2*n+1):# tau 3
+              for q in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          C100.append(temp_row)
+##########
+C101 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1): 
+          temp_row = []
+          for s in range(0, 2*n+1): #mu 41,42
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          if l==s and k==r:
+                              if q==0:
+                                  w=i
+                              else:
+                                  w=-i
+                          temp_row.append(w)
+          C101.append(temp_row)    
+##########
+C102 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for s in range(0, 2*n+1): #lambda 41,42
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          if l==s and k==r:
+                              if q==0:
+                                  w=i
+                              else:
+                                  w=-i
+                          temp_row.append(w)
+          C102.append(temp_row)    
+##########
+C103 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1): 
+          temp_row = []
+          for s in range(0, 2*n+1): #mu 51,52
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C103.append(temp_row)    
+##########
+C104 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for s in range(0, 2*n+1): #lambda 51,52
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C104.append(temp_row)    
+##########
+C105 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for j in range(1, d+1): 
+          temp_row = []
+          for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          C105.append(temp_row)    
+##########
+for i in range(len(C98)):
+    concatenated_row = C98[i] + C99[i] + C100[i]+ C101[i] +C102[i] +C103[i] +C104[i] + C105[i] 
+    W18.append(concatenated_row)    
+#######################
+# Gamma 8 nodes 
+C106 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+          C106.append(temp_row)
+##########
+C107 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1): 
+          temp_row = []
+          for p in range(0, 2*n+1):# tau 2
+              for q in range(1, n+1):
+                    w = 0
+                    temp_row.append(w)
+          C107.append(temp_row)
+##########
+C108 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1): 
+          temp_row = []
+          for p in range(0, 2*n+1):# tau 3
+              for q in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          C108.append(temp_row)
+##########
+C109 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1): 
+          temp_row = []
+          for s in range(0, 2*n+1): #mu 41,42
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C109.append(temp_row)    
+##########
+C110 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for s in range(0, 2*n+1): #lambda 41,42
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C110.append(temp_row)    
+##########
+C111 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1): 
+          temp_row = []
+          for s in range(0, 2*n+1): #mu 51,52
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          if l==s and k==r:
+                              if q==0:
+                                  w=i
+                              else:
+                                  w=-i
+                          temp_row.append(w)
+          C111.append(temp_row)    
+##########
+C112 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for s in range(0, 2*n+1): #lambda 51,52
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0                         
+                          if l==s and k==r:
+                              if q==0:
+                                  w=i
+                              else:
+                                  w=-i
+                          temp_row.append(w)
+          C112.append(temp_row)    
+##########
+C113 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for j in range(1, d+1): 
+          temp_row = []
+          for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          C113.append(temp_row)    
+##########
+for i in range(len(C106)):
+    concatenated_row = C106[i] + C107[i] + C108[i]+ C109[i] +C110[i] +C111[i] +C112[i] + C113[i] 
+    W18.append(concatenated_row)    
+#######################
+# Tau 3 nodes  as identity map
+C114 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+          C114.append(temp_row)
+##########
+C115 = []
+for l in range(0, 2*n+1):
+    for k in range(1, d+1): 
+          temp_row = []
+          for p in range(0, 2*n+1):# tau 2
+              for q in range(1, n+1):
+                    w = 0
+                    temp_row.append(w)
+          C115.append(temp_row)
+##########
+C116 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1): 
+          temp_row = []
+          for i in range(0, 2*n+1):# tau 3
+              for k in range(1, d+1):
+                    w = 0
+                    if l==i and j==k:
+                            w=1
+                    temp_row.append(w)
+          C116.append(temp_row)
+##########
+C117 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1): 
+          temp_row = []
+          for s in range(0, 2*n+1): #mu 41,42
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C117.append(temp_row)    
+##########
+C118 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for s in range(0, 2*n+1): #lambda 41,42
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C118.append(temp_row)    
+##########
+C119 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1): 
+          temp_row = []
+          for s in range(0, 2*n+1): #mu 51,52
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C119.append(temp_row)    
+##########
+C120 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for s in range(0, 2*n+1): #lambda 51,52
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0    
+                          temp_row.append(w)
+          C120.append(temp_row)    
+##########
+C121 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1): 
+          temp_row = []
+          for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          C121.append(temp_row)    
+##########
+for i in range(len(C114)):
+    concatenated_row = C114[i] + C115[i] + C116[i]+ C117[i] +C118[i] +C119[i] +C120[i] + C121[i] 
+    W18.append(concatenated_row)    
+#######################
+# x2_j nodes
+I45 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          I45.append(temp_row)
+##########
+I46 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# tau 2
+              for j in range(1, n+1):
+                    w = 0
+                    temp_row.append(w)
+          I46.append(temp_row)        
+##########
+I47 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# tau3
+              for j in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          I47.append(temp_row)        
+##########
+C122 = []
+for j in range(1, d+1): 
+          temp_row = []
+          for s in range(0, 2*n+1): #mu 41,42
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C122.append(temp_row)    
+##########
+C123 = []
+for j in range(1, d+1):
+          temp_row = []
+          for s in range(0, 2*n+1): #lambda 41,42
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C123.append(temp_row)    
+##########
+C124 = []
+for j in range(1, d+1): 
+          temp_row = []
+          for s in range(0, 2*n+1): #mu 51,52
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C124.append(temp_row)    
+##########
+C125 = []
+for j in range(1, d+1):
+          temp_row = []
+          for s in range(0, 2*n+1): #lambda 51,52
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0    
+                          temp_row.append(w)
+          C125.append(temp_row)    
+##########
+I48 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if j==k:
+                        w=1
+                    temp_row.append(w)
+          I48.append(temp_row)             
+##########
+for i in range(len(I45)):
+    concatenated_row = I45[i] + I46[i] + I47[i] + C122[i]+ C123[i] +C124[i] +C125[i]+ I48[i] 
+    W18.append(concatenated_row)    
+#######################
+# x3_j nodes
+I49 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          I49.append(temp_row)
+##########
+I50 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# tau 2
+              for j in range(1, n+1):
+                    w = 0
+                    temp_row.append(w)
+          I50.append(temp_row)        
+##########
+I51 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# tau3
+              for j in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          I51.append(temp_row)        
+##########
+C126 = []
+for j in range(1, d+1): 
+          temp_row = []
+          for s in range(0, 2*n+1): #mu 41,42
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C126.append(temp_row)    
+##########
+C127 = []
+for j in range(1, d+1):
+          temp_row = []
+          for s in range(0, 2*n+1): #lambda 41,42
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C127.append(temp_row)    
+##########
+C128 = []
+for j in range(1, d+1): 
+          temp_row = []
+          for s in range(0, 2*n+1): #mu 51,52
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C128.append(temp_row)    
+##########
+C129 = []
+for j in range(1, d+1):
+          temp_row = []
+          for s in range(0, 2*n+1): #lambda 51,52
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0    
+                          temp_row.append(w)
+          C129.append(temp_row)    
+##########
+I52 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if j+d==k:
+                        w=1
+                    temp_row.append(w)
+          I52.append(temp_row)             
+##########
+for i in range(len(I49)):
+    concatenated_row = I49[i] + I50[i] + I51[i]+ C126[i]+ C127[i] +C128[i] +C129[i]+ I52[i] 
+    W18.append(concatenated_row)    
+####################### 
+# x4_j nodes
+I53 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          I53.append(temp_row)
+##########
+I54 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# tau 2
+              for j in range(1, n+1):
+                    w = 0
+                    temp_row.append(w)
+          I54.append(temp_row)        
+##########
+I55 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# tau3
+              for j in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          I55.append(temp_row)        
+##########
+C130 = []
+for j in range(1, d+1): 
+          temp_row = []
+          for s in range(0, 2*n+1): #mu 41,42
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C130.append(temp_row)    
+##########
+C131 = []
+for j in range(1, d+1):
+          temp_row = []
+          for s in range(0, 2*n+1): #lambda 41,42
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C131.append(temp_row)    
+##########
+C132 = []
+for j in range(1, d+1): 
+          temp_row = []
+          for s in range(0, 2*n+1): #mu 51,52
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0
+                          temp_row.append(w)
+          C132.append(temp_row)    
+##########
+C133 = []
+for j in range(1, d+1):
+          temp_row = []
+          for s in range(0, 2*n+1): #lambda 51,52
+              for i in range(1, 2*n+1):
+                  for r in range(1, n+1):
+                      for q in range(2):
+                          w = 0    
+                          temp_row.append(w)
+          C133.append(temp_row)    
+##########
+I56 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if j+2*d==k:
+                        w=1
+                    temp_row.append(w)
+          I56.append(temp_row)             
+##########
+for i in range(len(I53)):
+    concatenated_row = I53[i] + I54[i] + I55[i]+  C130[i]+ C131[i] +C132[i] +C133[i]+ I56[i] 
+    W18.append(concatenated_row)    
+#######################
+# print("weight matrix for ninteenth layer/eighteenth hidden layer")
+# print(W18)
+#####################
+# #Bias matrix for ninteenth layer/eighteenth hidden layer
+
+B18 = []
+# bias matrix for Phi
+
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              temp_row.append(w)
+          B18.append(temp_row)
+
+# bias matrix for zeta 3 nodes
+
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+            w = -k
+            temp_row.append(w)
+          B18.append(temp_row)   
+
+# bias matrix for Gamma 7 nodes
+
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1):
+            w = -sum_of_all_i
+            temp_row.append(w)
+          B18.append(temp_row)   
+
+# bias matrix for Gamma 8 nodes
+
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1):
+              w = -sum_of_all_i
+              temp_row.append(w)
+          B18.append(temp_row) 
+          
+# bias matrix for Tau 3 nodes
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+            w =0 
+            temp_row.append(w)
+          B18.append(temp_row) 
+           
+# bias matrix for x2,x3,x4_j
+
+for j in range(1, 3*d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B18.append(temp_row)   
+# #####################       
+# print('Printing B18')
+# for i in B18:
+#     print(i)
+##################################
+L18 = []  # zeta 3, Gamma 7, Gamma 8 nodes
+for i in range(len(W18)):
+    temp_row = []
+    L18_i_entry = np.maximum((np.dot(W18[i], L17)+B18[i]), 0)
+    L18.append(L18_i_entry)
+######################
+# print('Printing zeta 3, Gamma 7 , Gamma 8 nodes for ninteenth layer/eighteenth hidden layer')
+# for i in L18:
+#     print(i)
+##############
+# # To construct weight matrix for twentieth layer/ninteenth hidden layer is L19=W19*L18+B19
+W19 = []
+# Phi nodes as identity map
+I57 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# Phi nodes
+                    w = 0
+                    if l==k:
+                        w=1
+                    temp_row.append(w)
+          I57.append(temp_row)
+##########
+I58 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# zeta 3
+              for k in range(1, n+1):
+                  for j in range(1, d+1):
+                      w = 0
+                      temp_row.append(w)
+          I58.append(temp_row)
+##########
+C134 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Gamma 7
+              for k in range(1, n+1):
+                      w = 0
+                      temp_row.append(w)
+          C134.append(temp_row)
+##########
+C135 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Gamma 8
+              for k in range(1, n+1):
+                      w = 0
+                      temp_row.append(w)
+          C135.append(temp_row)
+##########
+C136 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+                  for j in range(1, d+1):
+                      w = 0
+                      temp_row.append(w)
+          C136.append(temp_row)
+##########
+I59 = []
+for l in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          I59.append(temp_row)    
+##########
+for i in range(len(I57)):
+    concatenated_row = I57[i] + I58[i] + C134[i] +C135[i] +C136[i]+ I59[i]
+    W19.append(concatenated_row)    
+#######################
+# zeta nodes 
+I60 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+          I60.append(temp_row)
+##########
+I61 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# zeta 3
+              for k in range(1, n+1):
+                  for q in range(1, d+1):
+                    w = 0
+                    if j==q:
+                        w=1
+                    temp_row.append(w)
+          I61.append(temp_row)
+##########
+C137 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Gamma 7
+              for k in range(1, n+1):
+                      w = 0
+                      temp_row.append(w)
+          C137.append(temp_row)
+##########
+C138 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Gamma 8
+              for k in range(1, n+1):
+                      w = 0
+                      temp_row.append(w)
+          C138.append(temp_row)
+##########
+C139 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+                  for j in range(1, d+1):
+                      w = 0
+                      temp_row.append(w)
+          C139.append(temp_row)
+##########
+I62 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          I62.append(temp_row)    
+##########
+for i in range(len(I60)):
+    concatenated_row = I60[i] + I61[i] +C137[i] +C138[i] +C139[i]+ I62[i]
+    W19.append(concatenated_row)    
+#######################
+# mu 61,62 nodes 
+C140 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+          C140.append(temp_row)
+##########
+C141 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(0, 2*n+1):# zeta 3
+              for j in range(1, n+1):
+                  for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          C141.append(temp_row)
+##########
+C142 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 7
+              for j in range(1, n+1):
+                      w = 0
+                      if l==i and k==j:
+                          w=1/eps
+                      temp_row.append(w)
+          C142.append(temp_row)
+##########
+C143 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 8
+              for j in range(1, n+1):
+                      w = 0
+                      temp_row.append(w)
+          C143.append(temp_row)
+##########
+C144 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+                  for j in range(1, d+1):
+                      w = 0
+                      temp_row.append(w)
+          C144.append(temp_row)
+##########
+C145 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          C145.append(temp_row)    
+##########
+for i in range(len(C140)):
+    concatenated_row = C140[i] + C141[i] +C142[i] +C143[i] +C144[i]+ C145[i]
+    W19.append(concatenated_row)    
+#######################
+# lambda 61,62 nodes 
+C146 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+          C146.append(temp_row)
+##########
+C147 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(0, 2*n+1):# zeta 3
+              for j in range(1, n+1):
+                  for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          C147.append(temp_row)
+##########
+C148 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 7
+              for j in range(1, n+1):
+                      w = 0
+                      if l==i and k==j:
+                          w=-1/eps
+                      temp_row.append(w)
+          C148.append(temp_row)
+##########
+C149 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 8
+              for j in range(1, n+1):
+                      w = 0
+                      temp_row.append(w)
+          C149.append(temp_row)
+##########
+C150 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+                  for j in range(1, d+1):
+                      w = 0
+                      temp_row.append(w)
+          C150.append(temp_row)
+##########
+C151 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          C151.append(temp_row)    
+##########
+for i in range(len(C146)):
+    concatenated_row = C146[i] + C147[i] +C148[i] +C149[i] +C150[i]+ C151[i]
+    W19.append(concatenated_row)    
+#######################
+# Gamma 7 nodes as identity map 
+C152 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+          C152.append(temp_row)
+##########
+C153 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# zeta 3
+              for j in range(1, n+1):
+                  for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          C153.append(temp_row)
+##########
+C154 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 7
+              for j in range(1, n+1):
+                      w = 0
+                      if l==i and k==j:
+                          w=1
+                      temp_row.append(w)
+          C154.append(temp_row)
+##########
+C155 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 8
+              for j in range(1, n+1):
+                      w = 0
+                      temp_row.append(w)
+          C155.append(temp_row)
+##########
+C156 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+                  for j in range(1, d+1):
+                      w = 0
+                      temp_row.append(w)
+          C156.append(temp_row)
+##########
+C157 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          C157.append(temp_row)    
+##########
+for i in range(len(C152)):
+    concatenated_row = C152[i] + C153[i] +C154[i] +C155[i] +C156[i]+ C157[i]
+    W19.append(concatenated_row)    
+#######################
+# Gamma 8 nodes as identity map 
+C158 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+          C158.append(temp_row)
+##########
+C159 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# zeta 3
+              for j in range(1, n+1):
+                  for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          C159.append(temp_row)
+##########
+C160 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 7
+              for j in range(1, n+1):
+                      w = 0
+                      temp_row.append(w)
+          C160.append(temp_row)
+##########
+C161 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 8
+              for j in range(1, n+1):
+                      w = 0
+                      if l==i and k==j:
+                          w=1
+                      temp_row.append(w)
+          C161.append(temp_row)
+##########
+C162 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+                  for j in range(1, d+1):
+                      w = 0
+                      temp_row.append(w)
+          C162.append(temp_row)
+##########
+C163 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          C163.append(temp_row)    
+##########
+for i in range(len(C152)):
+    concatenated_row = C158[i] + C159[i] +C160[i] +C161[i] +C162[i]+ C163[i]
+    W19.append(concatenated_row)    
+#######################
+# Tau 3 nodes as identity map 
+C164 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# Phi nodes
+                    w = 0
+                    temp_row.append(w)
+          C164.append(temp_row)
+##########
+C165 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# zeta 3
+              for j in range(1, n+1):
+                  for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          C165.append(temp_row)
+##########
+C166 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 7
+              for j in range(1, n+1):
+                      w = 0
+                      temp_row.append(w)
+          C166.append(temp_row)
+##########
+C167 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 8
+              for j in range(1, n+1):
+                      w = 0
+                      temp_row.append(w)
+          C167.append(temp_row)
+##########
+C168 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+                  for k in range(1, d+1):
+                      w = 0
+                      if l==i and k==j:
+                          w=1
+                      temp_row.append(w)
+          C168.append(temp_row)
+##########
+C169 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          C169.append(temp_row)    
+##########
+for i in range(len(C164)):
+    concatenated_row = C164[i] + C165[i] +C166[i] +C167[i] +C168[i]+ C169[i]
+    W19.append(concatenated_row)    
+#######################
+# x2_j nodes
+I63 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          I63.append(temp_row)
+##########
+I64 = []
+for i in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# zeta 3
+              for k in range(1, n+1):
+                  for j in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          I64.append(temp_row)        
+##########
+C170 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 7
+              for j in range(1, n+1):
+                      w = 0
+                      temp_row.append(w)
+          C170.append(temp_row)
+##########
+C171 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 8
+              for j in range(1, n+1):
+                      w = 0
+                      temp_row.append(w)
+          C171.append(temp_row)
+##########
+C172 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+                  for k in range(1, d+1):
+                      w = 0
+                      temp_row.append(w)
+          C172.append(temp_row)
+##########
+I65 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if j==k:
+                        w=1
+                    temp_row.append(w)
+          I65.append(temp_row)             
+##########
+for i in range(len(I63)):
+    concatenated_row = I63[i] + I64[i] + C170[i] +C171[i]+ C172[i] + I65[i] 
+    W19.append(concatenated_row)    
+#######################
+# x3_j nodes
+I66 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          I66.append(temp_row)
+##########
+I67 = []
+for i in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# zeta 2
+              for k in range(1, n+1):
+                  for j in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          I67.append(temp_row)        
+##########
+C173 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 7
+              for j in range(1, n+1):
+                      w = 0
+                      temp_row.append(w)
+          C173.append(temp_row)
+##########
+C174 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 8
+              for j in range(1, n+1):
+                      w = 0
+                      temp_row.append(w)
+          C174.append(temp_row)
+##########
+C175 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+                  for k in range(1, d+1):
+                      w = 0
+                      temp_row.append(w)
+          C175.append(temp_row)
+##########
+I68 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if j+d==k:
+                        w=1
+                    temp_row.append(w)
+          I68.append(temp_row)             
+##########
+for i in range(len(I66)):
+    concatenated_row = I66[i] + I67[i]+C173[i] +C174[i]+ C175[i] + I68[i] 
+    W19.append(concatenated_row)    
+####################### 
+# x4_j nodes
+I69 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          I69.append(temp_row)
+##########
+I70 = []
+for i in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# zeta 3
+              for k in range(1, n+1):
+                  for j in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          I70.append(temp_row)        
+##########
+C176 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 7
+              for j in range(1, n+1):
+                      w = 0
+                      temp_row.append(w)
+          C176.append(temp_row)
+##########
+C177 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 8
+              for j in range(1, n+1):
+                      w = 0
+                      temp_row.append(w)
+          C177.append(temp_row)
+##########
+C178 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+                  for k in range(1, d+1):
+                      w = 0
+                      temp_row.append(w)
+          C178.append(temp_row)
+##########
+I71 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if j+2*d==k:
+                        w=1
+                    temp_row.append(w)
+          I71.append(temp_row)             
+##########
+for i in range(len(I69)):
+    concatenated_row = I69[i] + I70[i]+C176[i] +C177[i]+ C178[i] + I71[i] 
+    W19.append(concatenated_row)    
+#######################
+# print("weight matrix for twentieth layer/ninteenth hidden layer")
+# print(W19)
+#####################
+# #Bias matrix for twentieth layer/ninteenth hidden layer
+
+B19 = []
+# bias matrix for Phi
+
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              temp_row.append(w)
+          B19.append(temp_row)
+
+# bias matrix for zeta  nodes
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+            w = 0
+            temp_row.append(w)
+          B19.append(temp_row)   
+
+# bias matrix for mu 61,62  nodes            
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+            temp_row = []
+            for j in range(1):
+                w = 0
+                if q==0:
+                    w=1
+                temp_row.append(w)
+            B19.append(temp_row)
+            
+# bias matrix for lambda 61,62  nodes            
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+        for q in range(2):
+            temp_row = []
+            for j in range(1):
+                w = 0
+                if q==0:
+                    w=1
+                temp_row.append(w)
+            B19.append(temp_row) 
+
+# bias matrix for Gamma 7 nodes             
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B19.append(temp_row)
+
+# bias matrix for Gamma 8 nodes             
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B19.append(temp_row)
+          
+# bias matrix for Tau 3  nodes            
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+            temp_row = []
+            for i in range(1):
+                w = 0
+                temp_row.append(w)
+            B19.append(temp_row)
+            
+# bias matrix for x2,x3,x4_j
+
+for j in range(1, 3*d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B19.append(temp_row)   
+# #####################       
+# print('Printing B19')
+# for i in B19:
+#     print(i)
+##################################
+L19 = []  # zeta, mu 61,62, lambda 61,62 nodes
+for i in range(len(W19)):
+    temp_row = []
+    L19_i_entry = np.maximum((np.dot(W19[i], L18)+B19[i]), 0)
+    L19.append(L19_i_entry)
+###############
+# print('Printing zeta, mu 61,62, lambda 61,62 nodes for twentieth layer/ninteenth hidden layer')
+# for i in L19:
+#     print(i)
+##############
+# To construct weight matrix for twenty-one layer/twentieth hidden layer is L20=W20*L19+B20
+W20 = []
+# Phi nodes
+C179 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# Phi nodes
+                    w = 0
+                    if j==k:
+                        w=1
+                    temp_row.append(w)
+          C179.append(temp_row)
+##########
+C180 = []
+for i in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# zeta
+                    w = 0
+                    temp_row.append(w)
+          C180.append(temp_row)        
+##########
+C181 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): # mu 61,62  nodes
+              for r in range(1, n+1):
+                  for p in range(2):
+                    w = 0   
+                    temp_row.append(w)
+          C181.append(temp_row)
+##########
+C182 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): # lambda 61,62  nodes
+              for r in range(1, n+1):
+                  for p in range(2):
+                    w = 0   
+                    temp_row.append(w)
+          C182.append(temp_row)
+##########
+C183 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): # Gamma 7 nodes
+              for r in range(1, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          C183.append(temp_row)
+##########
+C184 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): # Gamma 8 nodes
+              for r in range(1, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          C184.append(temp_row)
+##########
+C185 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): # Tau 3 nodes
+              for r in range(1, d+1):
+                    w = 0   
+                    temp_row.append(w)
+          C185.append(temp_row)
+##########
+C186 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    temp_row.append(w)
+          C186.append(temp_row)             
+##########
+for i in range(len(C179)):
+    concatenated_row = C179[i] + C180[i]+ C181[i] + C182[i] +C183[i]+ C184[i] +C185[i]+ C186[i] 
+    W20.append(concatenated_row)    
+#######################
+# alpha 41,42
+I72 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# Phi nodes
+                    w = 0
+                    if j==i and j!=k:
+                        w=1/eps
+                    if k==i and j!=k:
+                          w=-1/eps   
+                    temp_row.append(w)
+          I72.append(temp_row)
+##########
+I73 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# zeta nodes
+                    w = 0   
+                    temp_row.append(w)
+          I73.append(temp_row)
+##########
+C187 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1): # mu 61,62  nodes
+              for r in range(1, n+1):
+                  for p in range(2):
+                    w = 0   
+                    temp_row.append(w)
+          C187.append(temp_row)
+##########
+C188 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1): # lambda 61,62  nodes
+              for r in range(1, n+1):
+                  for p in range(2):
+                    w = 0   
+                    temp_row.append(w)
+          C188.append(temp_row)
+##########
+C189 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1): # Gamma 7 nodes
+              for r in range(1, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          C189.append(temp_row)
+##########
+C190 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1): # Gamma 8 nodes
+              for r in range(1, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          C190.append(temp_row)
+##########
+C191 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1): # Tau 3 nodes
+              for r in range(1, d+1):
+                    w = 0   
+                    temp_row.append(w)
+          C191.append(temp_row)
+##########
+I74 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          I74.append(temp_row)    
+##########
+for i in range(len(I72)):
+    concatenated_row = I72[i] + I73[i] + C187[i]+ C188[i] + C189[i]+ C190[i]+ C191[i]+ I74[i]
+    W20.append(concatenated_row)    
+#######################
+# beta 41, 42
+I75 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# Phi nodes
+                    w = 0
+                    if j==i and j!=k:
+                        w=-1/eps
+                    if k==i and j!=k:
+                          w=1/eps   
+                    temp_row.append(w)
+          I75.append(temp_row)
+##########
+I76 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# zeta nodes
+                    w = 0   
+                    temp_row.append(w)
+          I76.append(temp_row)
+##########
+C192 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1): # mu 61,62  nodes
+              for r in range(1, n+1):
+                  for p in range(2):
+                    w = 0   
+                    temp_row.append(w)
+          C192.append(temp_row)
+##########
+C193 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1): # lambda 61,62  nodes
+              for r in range(1, n+1):
+                  for p in range(2):
+                    w = 0   
+                    temp_row.append(w)
+          C193.append(temp_row)
+##########
+C194 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1): # Gamma 7 nodes
+              for r in range(1, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          C194.append(temp_row)
+##########
+C195 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1): # Gamma 8 nodes
+              for r in range(1, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          C195.append(temp_row)
+##########
+C196 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1): # Tau 3 nodes
+              for r in range(1, d+1):
+                    w = 0   
+                    temp_row.append(w)
+          C196.append(temp_row)
+##########
+I77 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          I77.append(temp_row)    
+##########
+for i in range(len(I75)):
+    concatenated_row = I75[i] + I76[i]+ C192[i] +C193[i]+ C194[i] +C195[i]+ C196[i] + I77[i]
+    W20.append(concatenated_row)    
+#######################
+# rho 61, 62
+I78 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# Phi nodes
+                    w = 0   
+                    temp_row.append(w)
+          I78.append(temp_row)
+##########
+I79 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# zeta nodes
+                    w = 0  
+                    if j==i:
+                        w=1/eps
+                    temp_row.append(w)
+          I79.append(temp_row)
+##########
+C197 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1): # mu 61,62  nodes
+              for r in range(1, n+1):
+                  for p in range(2):
+                    w = 0   
+                    temp_row.append(w)
+          C197.append(temp_row)
+##########
+C198 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1): # lambda 61,62  nodes
+              for r in range(1, n+1):
+                  for p in range(2):
+                    w = 0   
+                    temp_row.append(w)
+          C198.append(temp_row)
+##########
+C199 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1): # Gamma 7 nodes
+              for r in range(1, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          C199.append(temp_row)
+##########
+C200 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1): # Gamma 8 nodes
+              for r in range(1, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          C200.append(temp_row)
+##########
+C201 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1): # Tau 3 nodes
+              for r in range(1, d+1):
+                    w = 0   
+                    temp_row.append(w)
+          C201.append(temp_row)
+##########
+I80 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x2 nodes
+                    w = 0  
+                    if j==i:
+                        w=-1/eps
+                    temp_row.append(w)
+          I80.append(temp_row)    
+##########
+I81 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x3 nodes
+                    w = 0
+                    temp_row.append(w)
+          I81.append(temp_row)    
+##########
+I82 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          I82.append(temp_row)    
+##########
+for i in range(len(I78)):
+    concatenated_row = I78[i] + I79[i]  + C197[i] + C198[i] +C199[i]+ C200[i] +C201[i]+ I80[i]+I81[i]+ I82[i]
+    W20.append(concatenated_row)    
+#######################
+# varrho 61, 62
+I83 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# Phi nodes
+                    w = 0   
+                    temp_row.append(w)
+          I83.append(temp_row)
+##########
+I84 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# zeta nodes
+                    w = 0  
+                    if j==i:
+                        w=1/eps
+                    temp_row.append(w)
+          I84.append(temp_row)
+##########
+C202 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1): # mu 61,62  nodes
+              for r in range(1, n+1):
+                  for p in range(2):
+                    w = 0   
+                    temp_row.append(w)
+          C202.append(temp_row)
+##########
+C203 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1): # lambda 61,62  nodes
+              for r in range(1, n+1):
+                  for p in range(2):
+                    w = 0   
+                    temp_row.append(w)
+          C203.append(temp_row)
+##########
+C204 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1): # Gamma 7 nodes
+              for r in range(1, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          C204.append(temp_row)
+##########
+C205 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1): # Gamma 8 nodes
+              for r in range(1, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          C205.append(temp_row)
+##########
+C206 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1): # Tau 3 nodes
+              for r in range(1, d+1):
+                    w = 0   
+                    temp_row.append(w)
+          C206.append(temp_row)
+##########
+I85 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x2 nodes
+                    w = 0  
+                    temp_row.append(w)
+          I85.append(temp_row)    
+##########
+I86 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x3 nodes
+                    w = 0  
+                    if j==i:
+                        w=-1/eps
+                    temp_row.append(w)
+          I86.append(temp_row)    
+##########
+I87 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for k in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          I87.append(temp_row)    
+##########
+for i in range(len(I83)):
+    concatenated_row = I83[i] + I84[i]+ C202[i] + C203[i] +C204[i]+ C205[i] +C206[i] + I85[i] + I86[i] + I87[i]
+    W20.append(concatenated_row)    
+#######################
+# Gamma 7 as identity map
+I83 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# Phi nodes
+                    w = 0   
+                    temp_row.append(w)
+          I83.append(temp_row)
+##########
+I84 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# zeta nodes
+                    w = 0  
+                    temp_row.append(w)
+          I84.append(temp_row)
+##########
+C207 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1): # mu 61,62  nodes
+              for r in range(1, n+1):
+                  for p in range(2):
+                    w = 0   
+                    temp_row.append(w)
+          C207.append(temp_row)
+##########
+C208 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1): # lambda 61,62  nodes
+              for r in range(1, n+1):
+                  for p in range(2):
+                    w = 0   
+                    temp_row.append(w)
+          C208.append(temp_row)
+##########
+C209 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1): # Gamma 7 nodes
+              for j in range(1, n+1):
+                    w = 0 
+                    if l==i and k==j:
+                        w=1  
+                    temp_row.append(w)
+          C209.append(temp_row)
+##########
+C210 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1): # Gamma 8 nodes
+              for j in range(1, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          C210.append(temp_row)
+##########
+C211 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1): # Tau 3 nodes
+              for j in range(1, d+1):
+                    w = 0   
+                    temp_row.append(w)
+          C211.append(temp_row)
+##########
+I85 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x2 nodes
+                    w = 0  
+                    temp_row.append(w)
+          I85.append(temp_row)    
+##########
+I86 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x3 nodes
+                    w = 0  
+                    temp_row.append(w)
+          I86.append(temp_row)    
+##########
+I87 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for k in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          I87.append(temp_row)    
+##########
+for i in range(len(I83)):
+    concatenated_row = I83[i] + I84[i]+ C207[i] + C208[i] +C209[i]+ C210[i] +C211[i] + I85[i] + I86[i] + I87[i]
+    W20.append(concatenated_row)    
+#######################
+# Gamma 8 
+I88 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# Phi nodes
+                    w = 0   
+                    temp_row.append(w)
+          I88.append(temp_row)
+##########
+I89 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# zeta nodes
+                    w = 0  
+                    temp_row.append(w)
+          I89.append(temp_row)
+##########
+I90 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1): # mu 61,62  nodes
+              for r in range(1, n+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          I90.append(temp_row)
+##########
+I91 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1): # lambda 61,62  nodes
+              for r in range(1, n+1):
+                  for p in range(2):
+                    w = 0   
+                    temp_row.append(w)
+          I91.append(temp_row)
+##########
+I92 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1): # Gamma 7 nodes
+              for j in range(1, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          I92.append(temp_row)
+##########
+I93 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1): # Gamma 8 nodes
+              for j in range(1, n+1):
+                    w = 0 
+                    if l==i and k==j:
+                        w=1
+                    temp_row.append(w)
+          I93.append(temp_row)
+##########
+I94 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1): # Tau 3 nodes
+              for j in range(1, d+1):
+                    w = 0   
+                    temp_row.append(w)
+          I94.append(temp_row)
+##########
+I95 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x2 nodes
+                    w = 0  
+                    temp_row.append(w)
+          I95.append(temp_row)    
+##########
+I96 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x3 nodes
+                    w = 0  
+                    temp_row.append(w)
+          I96.append(temp_row)    
+##########
+I97 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for j in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          I97.append(temp_row)    
+##########
+for i in range(len(I88)):
+    concatenated_row = I88[i] + I89[i]+ I90[i] + I91[i] +I92[i]+ I93[i] +I94[i] + I95[i] + I96[i] + I97[i]
+    W20.append(concatenated_row)    
+# #######################
+# Gamma 9 
+I98 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# Phi nodes
+                    w = 0   
+                    temp_row.append(w)
+          I98.append(temp_row)
+##########
+I99 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# zeta nodes
+                    w = 0  
+                    temp_row.append(w)
+          I99.append(temp_row)
+##########
+I100 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1): # mu 61,62  nodes
+              for r in range(1, n+1):
+                  for q in range(2):
+                    w = 0 
+                    if l==i and k==r and k>1:
+                        if q==0:
+                            w=C
+                        else:
+                            w=-C
+                    temp_row.append(w)
+          I100.append(temp_row)
+##########
+I101 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1): # lambda 61,62  nodes
+              for r in range(1, n+1):
+                  for q in range(2):
+                    w = 0 
+                    if l==i and k==r and k>1:
+                        if q==0:
+                            w=C
+                        else:
+                            w=-C   
+                    temp_row.append(w)
+          I101.append(temp_row)
+##########
+I102 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1): # Gamma 7 nodes
+              for j in range(1, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          I102.append(temp_row)
+##########
+I103 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1): # Gamma 8 nodes
+              for j in range(1, n+1):
+                    w = 0 
+                    if l==i and k==j+1 and k>1:
+                        w=1
+                    temp_row.append(w)
+          I103.append(temp_row)
+##########
+# print(I103)
+I104 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1): # Tau 3 nodes
+              for j in range(1, d+1):
+                    w = 0   
+                    temp_row.append(w)
+          I104.append(temp_row)
+##########
+I105 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x2 nodes
+                    w = 0  
+                    temp_row.append(w)
+          I105.append(temp_row)    
+##########
+I106 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x3 nodes
+                    w = 0  
+                    temp_row.append(w)
+          I106.append(temp_row)    
+##########
+I107 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for k in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          I107.append(temp_row)    
+##########
+for i in range(len(I98)):
+    concatenated_row = I98[i] + I99[i]+ I100[i] + I101[i] +I102[i]+ I103[i] +I104[i] + I105[i] + I106[i] + I107[i]
+    W20.append(concatenated_row)    
+#######################
+# Tau 3 
+I108 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# Phi nodes
+                    w = 0   
+                    temp_row.append(w)
+          I108.append(temp_row)
+##########
+I109 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# zeta nodes
+                    w = 0  
+                    temp_row.append(w)
+          I109.append(temp_row)
+##########
+I110 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1): # mu 61,62  nodes
+              for r in range(1, n+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          I110.append(temp_row)
+##########
+I111 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1): # lambda 61,62  nodes
+              for r in range(1, n+1):
+                  for q in range(2):
+                    w = 0   
+                    temp_row.append(w)
+          I111.append(temp_row)
+##########
+I112 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1): # Gamma 7 nodes
+              for k in range(1, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          I112.append(temp_row)
+##########
+I113 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1): # Gamma 8 nodes
+              for k in range(1, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          I113.append(temp_row)
+##########
+I114 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1): # Tau 3 nodes
+              for k in range(1, d+1):
+                    w = 0 
+                    if l==i and j==k:
+                        w=1
+                    temp_row.append(w)
+          I114.append(temp_row)
+##########
+I115 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x2 nodes
+                    w = 0  
+                    temp_row.append(w)
+          I115.append(temp_row)    
+##########
+I116 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x3 nodes
+                    w = 0  
+                    temp_row.append(w)
+          I116.append(temp_row)    
+##########
+I117 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          I117.append(temp_row)    
+##########
+for i in range(len(I108)):
+    concatenated_row = I108[i] + I109[i]+ I110[i] + I111[i] +I112[i]+ I113[i] +I114[i] + I115[i] + I116[i] + I117[i]
+    W20.append(concatenated_row)    
+#######################
+# x2_j nodes
+I118 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# mu nodes
+                    w = 0
+                    temp_row.append(w)
+          I118.append(temp_row)
+##########
+I119 = []
+for i in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# zeta
+                    w = 0
+                    temp_row.append(w)
+          I119.append(temp_row)        
+##########
+I120 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): # mu 61,62  nodes
+              for r in range(1, n+1):
+                  for p in range(2):
+                    w = 0   
+                    temp_row.append(w)
+          I120.append(temp_row)
+##########
+I121 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): # lambda 61,62  nodes
+              for r in range(1, n+1):
+                  for p in range(2):
+                    w = 0   
+                    temp_row.append(w)
+          I121.append(temp_row)
+##########
+I122 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): # Gamma 7 nodes
+              for r in range(1, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          I122.append(temp_row)
+##########
+I123 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): # Gamma 8 nodes
+              for r in range(1, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          I123.append(temp_row)
+##########
+I124 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): # Tau 3 nodes
+              for r in range(1, d+1):
+                    w = 0   
+                    temp_row.append(w)
+          I124.append(temp_row)
+##########
+I125 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if j==k:
+                        w=1
+                    temp_row.append(w)
+          I125.append(temp_row)             
+##########
+for i in range(len(I118)):
+    concatenated_row = I118[i] + I119[i]+ I120[i] + I121[i] +I122[i]+ I123[i] +I124[i]+ I125[i] 
+    W20.append(concatenated_row)    
+#######################
+# x3_j nodes
+I126 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# mu nodes
+                    w = 0
+                    temp_row.append(w)
+          I126.append(temp_row)
+##########
+I127 = []
+for i in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# zeta 
+                    w = 0
+                    temp_row.append(w)
+          I127.append(temp_row)        
+##########
+I128 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): # mu 61,62  nodes
+              for r in range(1, n+1):
+                  for p in range(2):
+                    w = 0   
+                    temp_row.append(w)
+          I128.append(temp_row)
+##########
+I129 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): # lambda 61,62  nodes
+              for r in range(1, n+1):
+                  for p in range(2):
+                    w = 0   
+                    temp_row.append(w)
+          I129.append(temp_row)
+##########
+I130 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): # Gamma 7 nodes
+              for r in range(1, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          I130.append(temp_row)
+##########
+I131 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): # Gamma 8 nodes
+              for r in range(1, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          I131.append(temp_row)
+##########
+I132 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): # Tau 3 nodes
+              for r in range(1, d+1):
+                    w = 0   
+                    temp_row.append(w)
+          I132.append(temp_row)
+##########
+I133 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if j+d==k:
+                        w=1
+                    temp_row.append(w)
+          I133.append(temp_row)             
+##########
+for i in range(len(I126)):
+    concatenated_row = I126[i] + I127[i]+ I128[i] + I129[i] + I130[i]+ I131[i] +I132[i] + I133[i] 
+    W20.append(concatenated_row)    
+####################### 
+# x4_j nodes
+I134 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# mu nodes
+                    w = 0
+                    temp_row.append(w)
+          I134.append(temp_row)
+##########
+I135 = []
+for i in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# zeta 
+                    w = 0
+                    temp_row.append(w)
+          I135.append(temp_row)        
+##########
+I136 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): # mu 61,62  nodes
+              for r in range(1, n+1):
+                  for p in range(2):
+                    w = 0   
+                    temp_row.append(w)
+          I136.append(temp_row)
+##########
+I137 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): # lambda 61,62  nodes
+              for r in range(1, n+1):
+                  for p in range(2):
+                    w = 0   
+                    temp_row.append(w)
+          I137.append(temp_row)
+##########
+I138 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): # Gamma 7 nodes
+              for r in range(1, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          I138.append(temp_row)
+##########
+I139 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): # Gamma 8 nodes
+              for r in range(1, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          I139.append(temp_row)
+##########
+I140 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1): # Tau 3 nodes
+              for r in range(1, d+1):
+                    w = 0   
+                    temp_row.append(w)
+          I140.append(temp_row)
+##########
+I141 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, 3*d+1):
+                    w = 0
+                    if j+2*d==k:
+                        w=1
+                    temp_row.append(w)
+          I141.append(temp_row)             
+##########
+for i in range(len(I134)):
+    concatenated_row = I134[i] + I135[i]+ I136[i] + I137[i] +I138[i]+ I139[i] +I140[i] + I141[i] 
+    W20.append(concatenated_row)    
+# #######################
+# print("weight matrix for twenty-one layer/twentieth hidden layer")
+# print(W20)
+#####################
+# #Bias matrix for twenty-one layer/twentieth hidden layer
+
+B20 = []
+
+# bias matrix for Phi
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0              
+              temp_row.append(w)
+          B20.append(temp_row)
+          
+# bias matrix for alpha 41,42
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              if q==0:
+                  w=1
+              temp_row.append(w)
+          B20.append(temp_row)
+
+# bias matrix for beta 41,42
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              if q==0:
+                  w=1
+              temp_row.append(w)
+          B20.append(temp_row)
+
+# bias matrix for rho 61,62
+
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              if q==0:
+                  w=1
+              temp_row.append(w)
+          B20.append(temp_row)
+
+# bias matrix for varrho 61,62
+
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              if q==0:
+                  w=1
+              temp_row.append(w)
+          B20.append(temp_row)
+
+# bias matrix for Gamma 7
+
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B20.append(temp_row)
+
+# bias matrix for Gamma 8
+
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B20.append(temp_row) 
+          
+# bias matrix for Gamma 9
+
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1):
+              w = -2*C+1
+              temp_row.append(w)
+          B20.append(temp_row) 
+          
+# bias matrix for Tau 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B20.append(temp_row)
+           
+# bias matrix for x2,x3,x4_j
+
+for j in range(1, 3*d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B20.append(temp_row)   
+# #####################       
+# print('Printing B20')
+# for i in B20:
+#     print(i)
+##################################
+L20 = []  # Gamma 9,alpha 41,42, beta 41,42, rho 61,62, varrho 61,62 nodes
+for i in range(len(W20)):
+    temp_row = []
+    L20_i_entry = np.maximum((np.dot(W20[i], L19)+B20[i]), 0)
+    L20.append(L20_i_entry)
+
+# print('Printing Gamma 9,alpha 41,42, beta 41,42, rho 61,62, varrho 61,62 nodes for twenty-one layer/twentieth hidden layer')
+# for i in L20:
+#     print(i)
+##############
+# To construct weight matrix for twenty-two layer/twenty-one hidden layer is L21=W21*L20+B21
+W21 = []
+# Phi as identity map
+J1 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+                    w = 0
+                    if j==i:
+                          w=1
+                    temp_row.append(w)
+          J1.append(temp_row)
+##########
+J2 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# alpha 41, 42
+              for l in range(1, d+1):
+                  for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          J2.append(temp_row)
+##########
+J3 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# beta 41, 42
+              for l in range(1, d+1):
+                  for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          J3.append(temp_row)
+##########
+J4 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# rho 61, 62
+                  for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          J4.append(temp_row)
+##########
+J5 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# varrho 61, 62
+                  for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          J5.append(temp_row)
+##########
+J6 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# gamma 7 nodes
+              for i in range(1, n+1):
+                    w = 0
+                    temp_row.append(w)
+          J6.append(temp_row)    
+##########
+J7 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# gamma 8 nodes
+              for i in range(1, n+1):
+                    w = 0
+                    temp_row.append(w)
+          J7.append(temp_row)    
+##########
+J8 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# gamma 9 nodes
+              for i in range(1, n+1):
+                    w = 0
+                    temp_row.append(w)
+          J8.append(temp_row)    
+##########
+J9 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3 nodes
+              for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J9.append(temp_row)    
+##########
+J10 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          J10.append(temp_row)    
+##########
+for i in range(len(J1)):
+    concatenated_row = J1[i] + J2[i] + J3[i] + J4[i] + J5[i]+ J6[i] + J7[i] + J8[i] + J9[i] + J10[i]
+    W21.append(concatenated_row)
+##########    
+# Phi' nodes
+J11 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J11.append(temp_row)
+##########
+J12 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# alpha 41, 42
+              for l in range(1, d+1):
+                  for q in range(2):
+                    w = 0
+                    if j==i and l==k:
+                      if q==0:
+                          w=1
+                      else:
+                          w=-1
+                    temp_row.append(w)
+          J12.append(temp_row)
+##########
+J13 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# beta 41, 42
+              for l in range(1, d+1):
+                  for q in range(2):
+                    w = 0
+                    if j==i and l==k:
+                      if q==0:
+                          w=1
+                      else:
+                          w=-1   
+                    temp_row.append(w)
+          J13.append(temp_row)
+##########
+J14 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# rho 61, 62
+                  for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          J14.append(temp_row)
+##########
+J15 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# varrho 61, 62
+                  for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          J15.append(temp_row)
+##########
+J16 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Gamma 7
+              for i in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J16.append(temp_row)
+##########
+J17 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Gamma 8
+              for i in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J17.append(temp_row)
+##########
+J18 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Gamma 9
+              for i in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J18.append(temp_row)
+##########
+J19 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          J19.append(temp_row)
+##########
+J20 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          J20.append(temp_row)    
+##########
+for i in range(len(J11)):
+    concatenated_row = J11[i] + J12[i] + J13[i] + J14[i] + J15[i]+ J16[i] + J17[i] + J18[i] + J19[i] + J20[i]
+    W21.append(concatenated_row)    
+#######################
+# upsilon 1
+J21 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J21.append(temp_row)
+##########
+J22 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# alpha 41, 42
+              for l in range(1, d+1):
+                  for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          J22.append(temp_row)
+##########
+J23 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# beta 41, 42
+              for l in range(1, d+1):
+                  for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          J23.append(temp_row)
+##########
+J24 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# rho 61, 62
+                  for q in range(2):
+                    w = 0 
+                    if j==i:
+                      if q==0:
+                          w=C
+                      else:
+                          w=-C
+                    temp_row.append(w)
+          J24.append(temp_row)
+##########
+J25 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# varrho 61, 62
+                  for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          J25.append(temp_row)
+##########
+J26 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Gamma 7
+              for i in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J26.append(temp_row)
+##########
+J27 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Gamma 8
+              for i in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J27.append(temp_row)
+##########
+J28 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Gamma 9
+              for i in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J28.append(temp_row)
+##########
+J29 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          J29.append(temp_row)
+##########
+J30 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    if j==i:
+                        w=1 
+                    temp_row.append(w)
+          J30.append(temp_row)    
+##########
+for i in range(len(J21)):
+    concatenated_row = J21[i] + J22[i] + J23[i] + J24[i] + J25[i]+ J26[i] + J27[i] + J28[i] + J29[i] + J30[i]
+    W21.append(concatenated_row)    
+#######################
+# upsilon 2
+J31 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J31.append(temp_row)
+##########
+J32 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# alpha 41, 42
+              for l in range(1, d+1):
+                  for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          J32.append(temp_row)
+##########
+J33 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# beta 41, 42
+              for l in range(1, d+1):
+                  for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          J33.append(temp_row)
+##########
+J34 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# rho 61, 62
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          J34.append(temp_row)
+##########
+J35 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# varrho 61, 62
+                  for q in range(2):
+                    w = 0 
+                    if j==i:
+                      if q==0:
+                          w=C
+                      else:
+                          w=-C 
+                    temp_row.append(w)
+          J35.append(temp_row)
+##########
+J36 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Gamma 7
+              for i in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J36.append(temp_row)
+##########
+J37 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Gamma 8
+              for i in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J37.append(temp_row)
+##########
+J38 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Gamma 9
+              for i in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J38.append(temp_row)
+##########
+J39 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          J39.append(temp_row)
+##########
+J40 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    if j+d==i:
+                        w=1 
+                    temp_row.append(w)
+          J40.append(temp_row)    
+##########
+for i in range(len(J31)):
+    concatenated_row = J31[i] + J32[i] + J33[i] + J34[i] + J35[i]+ J36[i] + J37[i] + J38[i] + J39[i] + J40[i]
+    W21.append(concatenated_row)    
+#######################
+# varsigma 2
+J41 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J41.append(temp_row)
+##########
+J42 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# alpha 41, 42
+              for j in range(1, d+1):
+                  for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          J42.append(temp_row)
+##########
+J43 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# beta 41, 42
+              for j in range(1, d+1):
+                  for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          J43.append(temp_row)
+##########
+J44 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# rho 61, 62
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          J44.append(temp_row)
+##########
+J45 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# varrho 61, 62
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          J45.append(temp_row)
+##########
+J46 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 7
+              for j in range(1, n+1):
+                    w = 0  
+                    if l==i and k==j:
+                        w=1
+                    temp_row.append(w)
+          J46.append(temp_row)
+##########
+J47 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 8
+              for j in range(1, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          J47.append(temp_row)
+##########
+J48 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 9
+              for j in range(1, n+1):
+                    w = 0 
+                    if l==i and k==j:
+                        w=1  
+                    temp_row.append(w)
+          J48.append(temp_row)
+##########
+J49 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for j in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          J49.append(temp_row)
+##########
+J50 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          J50.append(temp_row)    
+##########
+for i in range(len(J41)):
+    concatenated_row = J41[i] + J42[i] + J43[i] + J44[i] + J45[i]+ J46[i] + J47[i] + J48[i] + J49[i] + J50[i]
+    W21.append(concatenated_row)    
+#######################
+# Gamma 8
+J51 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J51.append(temp_row)
+##########
+J52 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# alpha 41, 42
+              for j in range(1, d+1):
+                  for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          J52.append(temp_row)
+##########
+J53 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# beta 41, 42
+              for j in range(1, d+1):
+                  for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          J53.append(temp_row)
+##########
+J54 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# rho 61, 62
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          J54.append(temp_row)
+##########
+J55 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, d+1):# varrho 61, 62
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          J55.append(temp_row)
+##########
+J56 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 7
+              for j in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J56.append(temp_row)
+##########
+J57 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 8
+              for j in range(1, n+1):
+                    w = 0 
+                    if l==i and k==j:
+                        w=1
+                    temp_row.append(w)
+          J57.append(temp_row)
+##########
+J58 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 9
+              for j in range(1, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          J58.append(temp_row)
+##########
+J59 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for j in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          J59.append(temp_row)
+##########
+J60 = []
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          J60.append(temp_row)    
+##########
+for i in range(len(J51)):
+    concatenated_row = J51[i] + J52[i] + J53[i] + J54[i] + J55[i]+ J56[i] + J57[i] + J58[i] + J59[i] + J60[i]
+    W21.append(concatenated_row)    
+#######################
+# Tau 3
+J61 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J61.append(temp_row)
+##########
+J62 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# alpha 41, 42
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          J62.append(temp_row)
+##########
+J63 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# beta 41, 42
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          J63.append(temp_row)
+##########
+J64 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# rho 61, 62
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          J64.append(temp_row)
+##########
+J65 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# varrho 61, 62
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          J65.append(temp_row)
+##########
+J66 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 7
+              for k in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J66.append(temp_row)
+##########
+J67 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 8
+              for k in range(1, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          J67.append(temp_row)
+##########
+J68 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 9
+              for j in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J68.append(temp_row)
+##########
+J69 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for k in range(1, d+1):
+                    w = 0 
+                    if l==i and k==j:
+                        w=1 
+                    temp_row.append(w)
+          J69.append(temp_row)
+##########
+J70 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          J70.append(temp_row)    
+##########
+for i in range(len(J61)):
+    concatenated_row = J61[i] + J62[i] + J63[i] + J64[i] + J65[i]+ J66[i] + J67[i] + J68[i] + J69[i] + J70[i]
+    W21.append(concatenated_row)    
+#######################
+# x 4
+J71 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J71.append(temp_row)
+##########
+J72 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# alpha 41, 42
+              for l in range(1, d+1):
+                  for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          J72.append(temp_row)
+##########
+J73 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# beta 41, 42
+              for l in range(1, d+1):
+                  for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          J73.append(temp_row)
+##########
+J74 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# rho 61, 62
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          J74.append(temp_row)
+##########
+J75 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# varrho 61, 62
+                  for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          J75.append(temp_row)
+##########
+J76 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 7
+              for k in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J76.append(temp_row)
+##########
+J77 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 8
+              for k in range(1, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          J77.append(temp_row)
+##########
+J78 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 9
+              for j in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J78.append(temp_row)
+##########
+J79 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for k in range(1, d+1):
+                    w = 0 
+                    temp_row.append(w)
+          J79.append(temp_row)
+##########
+J80 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, 3*d+1):# x2,x3,x4 nodes
+                    w = 0
+                    if j+2*d==i:
+                        w=1 
+                    temp_row.append(w)
+          J80.append(temp_row)    
+##########
+for i in range(len(J71)):
+    concatenated_row = J71[i] + J72[i] + J73[i] + J74[i] + J75[i]+J76[i] + J77[i] + J78[i] + J79[i] + J80[i]
+    W21.append(concatenated_row)    
+#######################
+# print("weight matrix for twenty-two layer/twenty-one hidden layer")
+# print(W21)
+#####################
+# #Bias matrix for twenty-two layer/twenty-one hidden layer
+
+B21 = []
+
+# Phi
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B21.append(temp_row)
+# Phi'
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = -1
+              temp_row.append(w)
+          B21.append(temp_row)
+
+# upsilon 1
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = -C
+              temp_row.append(w)
+          B21.append(temp_row)
+
+# upsilon 2
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = -C
+              temp_row.append(w)
+          B21.append(temp_row)
+
+# varsigma 2
+
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B21.append(temp_row)
+          
+# Gamma 8
+for l in range(0, 2*n+1):
+    for k in range(1, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B21.append(temp_row)  
+
+# Tau 3
+for l in range(0, 2*n+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B21.append(temp_row) 
+          
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B21.append(temp_row)   
+# #####################       
+# print('Printing B21')
+# for i in B21:
+#     print(i)
+##################################
+L21 = []  # Phi', upsilon 1, upsilon 2 nodes
+for i in range(len(W21)):
+    temp_row = []
+    L21_i_entry = np.maximum((np.dot(W21[i], L20)+B21[i]), 0)
+    L21.append(L21_i_entry)
+#####################
+# print('Printing Phi prime, upsilon 1, upsilon 2 nodes for twenty-two layer/twenty-one hidden layer')
+# for i in L21:
+#     print(i)
+##############
+# To construct weight matrix for twenty-three layer/twenty-two hidden layer is L22=W22*L21+B22
+W22 = []
+# Phi' as identity map
+J81 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J81.append(temp_row)
+##########
+J82 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    if j==i and k==l:
+                          w=1
+                    temp_row.append(w)
+          J82.append(temp_row)
+##########
+J83 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0  
+                    temp_row.append(w)
+          J83.append(temp_row)
+##########
+J84 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 2
+                    w = 0  
+                    temp_row.append(w)
+          J84.append(temp_row)
+##########
+J85 = []
+for j in range(1, d+1):
+    for i in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 2
+              for k in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J85.append(temp_row)
+##########
+J86 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 8
+              for l in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J86.append(temp_row)
+##########
+J87 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J87.append(temp_row)    
+##########
+J88 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          J88.append(temp_row)    
+##########
+for i in range(len(J81)):
+    concatenated_row = J81[i] + J82[i] + J83[i] + J84[i] + J85[i]+ J86[i] + J87[i] + J88[i] 
+    W22.append(concatenated_row)
+########## 
+# upsilon 1 as identity map
+J89 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J89.append(temp_row)
+##########
+J90 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J90.append(temp_row)
+##########
+J91 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0  
+                    if j==i:
+                        w=1
+                    temp_row.append(w)
+          J91.append(temp_row)
+##########
+J92 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 2
+                    w = 0 
+                    temp_row.append(w)
+          J92.append(temp_row)
+##########
+J93 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 2
+              for k in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J93.append(temp_row)
+##########
+J94 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 8
+              for l in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J94.append(temp_row)
+##########
+J95 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J95.append(temp_row)    
+##########
+J96 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          J96.append(temp_row)    
+##########
+for i in range(len(J89)):
+    concatenated_row = J89[i] + J90[i] + J91[i] + J92[i] + J93[i]+ J94[i] + J95[i] + J96[i] 
+    W22.append(concatenated_row)
+########## 
+# upsilon 2 as identity map
+J97 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J97.append(temp_row)
+##########
+J98 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J98.append(temp_row)
+##########
+J99 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0  
+                    temp_row.append(w)
+          J99.append(temp_row)
+##########
+J100 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 2
+                    w = 0
+                    if j==i:
+                        w=1 
+                    temp_row.append(w)
+          J100.append(temp_row)
+##########
+J101 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 2
+              for k in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J101.append(temp_row)
+##########
+J102 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 8
+              for l in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J102.append(temp_row)
+##########
+J103 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J103.append(temp_row)    
+##########
+J104 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x2,x3,x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          J104.append(temp_row)    
+##########
+for i in range(len(J97)):
+    concatenated_row = J97[i] + J98[i] + J99[i] + J100[i] + J101[i]+ J102[i] + J103[i] + J104[i] 
+    W22.append(concatenated_row)
+##########  
+# alpha 51, 52
+J105 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J105.append(temp_row)
+##########
+J106 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J106.append(temp_row)
+##########
+J107 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    if j==i :
+                        w=1/eps  
+                    temp_row.append(w)
+          J107.append(temp_row)
+##########
+J108 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 2
+                    w = 0 
+                    if j==i :
+                        w=-1/eps 
+                    temp_row.append(w)
+          J108.append(temp_row)
+##########
+J109 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 2
+              for r in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J109.append(temp_row)
+##########
+J110 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 8
+              for l in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J110.append(temp_row)
+##########
+J111 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J111.append(temp_row)    
+##########
+J112 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          J112.append(temp_row)    
+##########
+for i in range(len(J105)):
+    concatenated_row = J105[i] + J106[i] + J107[i] + J108[i] + J109[i]+ J110[i] + J111[i] + J112[i] 
+    W22.append(concatenated_row)
+########## 
+# varsigma 3 nodes
+J113 = []
+for l in range(0, 2*n+1):    
+   for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+                    w = 0  
+                    if j==i and k==0:
+                        w=1
+                    temp_row.append(w)
+          J113.append(temp_row)         
+########## 
+J114 = []
+for l in range(0, 2*n+1):    
+   for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J114.append(temp_row)
+##########
+J115 = []
+for l in range(0, 2*n+1):    
+   for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0   
+                    temp_row.append(w)
+          J115.append(temp_row)
+##########
+J116 = []
+for l in range(0, 2*n+1):    
+   for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 2
+                    w = 0 
+                    temp_row.append(w)
+          J116.append(temp_row)
+##########
+J117 = []
+for l in range(0, 2*n+1):    
+   for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# varsigma 2
+              for i in range(1, n+1):
+                    w = 0  
+                    if l==r and k==i:
+                        w=1
+                    temp_row.append(w)
+          J117.append(temp_row)          
+##########
+J118 = []
+for l in range(0, 2*n+1):    
+   for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Gamma 8
+              for i in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J118.append(temp_row)
+##########
+J119 = []
+for l in range(0, 2*n+1):    
+   for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J119.append(temp_row)    
+##########
+J120 = []
+for l in range(0, 2*n+1):    
+   for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          J120.append(temp_row)    
+##########
+for i in range(len(J113)):
+    concatenated_row = J113[i] + J114[i] + J115[i] + J116[i] + J117[i]+ J118[i] + J119[i] + J120[i] 
+    W22.append(concatenated_row)
+# print(W22)    
+########## 
+# varsigma 4 nodes
+J121 = []
+for l in range(0, 2*n+1):    
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+                    w = 0  
+                    if j==i and k==0:
+                        w=1
+                    temp_row.append(w)
+          J121.append(temp_row)
+##########
+J122 = []
+for l in range(0, 2*n+1):    
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J122.append(temp_row)
+##########
+J123 = []
+for j in range(1, d+1):
+    for l in range(0, 2*n+1):
+        for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0   
+                    temp_row.append(w)
+          J123.append(temp_row)
+##########
+J124 = []
+for l in range(0, 2*n+1):    
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 2
+                    w = 0 
+                    temp_row.append(w)
+          J124.append(temp_row)
+##########
+J125 = []
+for l in range(0, 2*n+1):    
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# varsigma 2
+              for i in range(1, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          J125.append(temp_row)
+##########
+J126 = []
+for l in range(0, 2*n+1):    
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Gamma 8
+              for i in range(1, n+1):
+                    w = 0  
+                    if l==r and k==i and k!=0:
+                        w=1 
+                    temp_row.append(w)
+          J126.append(temp_row)
+##########
+J127 = []
+for l in range(0, 2*n+1):    
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J127.append(temp_row)    
+##########
+J128 = []
+for l in range(0, 2*n+1):    
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          J128.append(temp_row)    
+##########
+for i in range(len(J121)):
+    concatenated_row = J121[i] + J122[i] + J123[i] + J124[i] + J125[i]+ J126[i] + J127[i] + J128[i] 
+    W22.append(concatenated_row)
+########## 
+# Tau 3 nodes
+J129 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          J129.append(temp_row)
+##########
+J130 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J130.append(temp_row)
+##########
+J131 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0   
+                    temp_row.append(w)
+          J131.append(temp_row)
+##########
+J132 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 2
+                    w = 0 
+                    temp_row.append(w)
+          J132.append(temp_row)
+##########
+J133 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# varsigma 2
+              for i in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J133.append(temp_row)
+##########
+J134 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Gamma 8
+              for i in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J134.append(temp_row)
+##########
+J135 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    if l==r and j==i:
+                        w=1
+                    temp_row.append(w)
+          J135.append(temp_row)    
+##########
+J136 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          J136.append(temp_row)    
+##########
+for i in range(len(J129)):
+    concatenated_row = J129[i] + J130[i] + J131[i] + J132[i] + J133[i]+ J134[i] + J135[i] + J136[i] 
+    W22.append(concatenated_row)
+########## 
+# x 4 nodes
+J137 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          J137.append(temp_row)
+##########
+J138 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J138.append(temp_row)
+##########
+J139 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0   
+                    temp_row.append(w)
+          J139.append(temp_row)
+##########
+J140 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 2
+                    w = 0 
+                    temp_row.append(w)
+          J140.append(temp_row)
+##########
+J141 = []
+for l in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# varsigma 2
+              for i in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J141.append(temp_row)
+##########
+J142 = []
+for l in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Gamma 8
+              for i in range(1, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J142.append(temp_row)
+##########
+J143 = []
+for l in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J143.append(temp_row)    
+##########
+J144 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if l==i:
+                        w=1
+                    temp_row.append(w)
+          J144.append(temp_row)    
+##########
+for i in range(len(J137)):
+    concatenated_row = J137[i] + J138[i] + J139[i] + J140[i] + J141[i]+ J142[i] + J143[i] + J144[i] 
+    W22.append(concatenated_row)
+#####################
+# print("weight matrix for twenty-three layer/twenty-two hidden layer")
+# print(W22)
+#####################
+
+# #Bias matrix for twenty-three layer/twenty-two hidden layer
+
+B22 = []
+
+# bias matrix for Phi'
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0              
+              temp_row.append(w)
+          B22.append(temp_row)
+
+# bias matrix for upsilon 1
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B22.append(temp_row)
+
+# bias matrix for upsilon 2
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B22.append(temp_row) 
+          
+# bias matrix for alpha 51,52
+
+for j in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              if q==0:
+                  w=1-(1/eps)
+              else:
+                  w=-(1/eps) 
+              temp_row.append(w)
+          B22.append(temp_row)
+
+# # bias matrix for varsigma 3
+
+for l in range(0, 2*n+1):    
+   for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              if k==0:
+                  w=1
+              temp_row.append(w)
+          B22.append(temp_row)
+
+# bias matrix for varsigma 4
+
+for l in range(0, 2*n+1):    
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B22.append(temp_row)
+
+# bias matrix for Tau 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B22.append(temp_row)
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B22.append(temp_row)   
+# #####################       
+# print('Printing B22')
+# for i in B22:
+#     print(i)
+##################################
+L22 = []  # alpha 51,52, varsigma 3, varsigma 4 nodes
+for i in range(len(W22)):
+    temp_row = []
+    L22_i_entry = np.maximum((np.dot(W22[i], L21)+B22[i]), 0)
+    L22.append(L22_i_entry)
+
+# print('Printing alpha 51,52, varsigma 3, varsigma 4 nodes for twenty-three layer/twenty-two hidden layer')
+# for i in L22:
+#     print(i)
+##############
+# To construct weight matrix for twenty-four layer/twenty-three hidden layer is L22=W22*L21+B22
+W23 = []
+# Phi' as identity map
+J145 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    if j==i and k==l:
+                          w=1
+                    temp_row.append(w)
+          J145.append(temp_row)
+##########
+J146 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0  
+                    temp_row.append(w)
+          J146.append(temp_row)
+##########
+J147 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 2
+                    w = 0  
+                    temp_row.append(w)
+          J147.append(temp_row)
+##########
+J148 = []
+for j in range(1, d+1):
+    for i in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# alpha 51,52
+                  for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          J148.append(temp_row)
+##########
+J149 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J149.append(temp_row)
+##########
+J150 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J150.append(temp_row)
+##########
+J151 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J151.append(temp_row)    
+##########
+J152 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          J152.append(temp_row)    
+##########
+for i in range(len(J145)):
+    concatenated_row = J145[i] + J146[i] + J147[i] + J148[i] + J149[i]+ J150[i] + J151[i] + J152[i] 
+    W23.append(concatenated_row)
+########## 
+# upsilon 1 as identity map
+J153 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J153.append(temp_row)
+##########
+J154 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    if j==i:
+                        w=1
+                    temp_row.append(w)
+          J154.append(temp_row)
+##########
+J155 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 2
+                    w = 0  
+                    temp_row.append(w)
+          J155.append(temp_row)
+##########
+J156 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# alpha 51,52
+                  for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          J156.append(temp_row)
+##########
+J157 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J157.append(temp_row)
+##########
+J158 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J158.append(temp_row)
+##########
+J159 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J159.append(temp_row)    
+##########
+J160 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          J160.append(temp_row)    
+##########
+for i in range(len(J153)):
+    concatenated_row = J153[i] + J154[i] + J155[i] + J156[i] + J157[i]+ J158[i] + J159[i] + J160[i] 
+    W23.append(concatenated_row)
+########## 
+# upsilon 3 
+J161 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J161.append(temp_row)
+##########
+J162 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0
+                    temp_row.append(w)
+          J162.append(temp_row)
+##########
+J163 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 2
+                    w = 0  
+                    if j==i:
+                        w=1
+                    temp_row.append(w)
+          J163.append(temp_row)
+##########
+J164 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# alpha 51,52
+                  for q in range(2):
+                    w = 0 
+                    if j==i:
+                        if q==0:
+                          w=-C
+                        else:
+                            w=C
+                    temp_row.append(w)
+          J164.append(temp_row)
+##########
+J165 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          J165.append(temp_row)
+##########
+J166 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J166.append(temp_row)
+##########
+J167 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J167.append(temp_row)    
+##########
+J168 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          J168.append(temp_row)    
+##########
+for i in range(len(J161)):
+    concatenated_row = J161[i] + J162[i] + J163[i] + J164[i] + J165[i]+ J166[i] + J167[i] + J168[i] 
+    W23.append(concatenated_row)
+##########  
+# varsigma 3 as identity map
+J169 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J169.append(temp_row)
+##########
+J170 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0
+                    temp_row.append(w)
+          J170.append(temp_row)
+##########
+J171 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 2
+                    w = 0  
+                    temp_row.append(w)
+          J171.append(temp_row)
+##########
+J172 = []
+for l in range(0, 2*n+1):
+    for k in range(0, n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# alpha 51,52
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          J172.append(temp_row)
+##########
+J173 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    if l==i and k==r and j==s:
+                        w=1
+                    temp_row.append(w)
+          J173.append(temp_row)
+##########
+J174 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J174.append(temp_row)
+##########
+J175 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J175.append(temp_row)    
+##########
+J176 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          J176.append(temp_row)    
+##########
+for i in range(len(J169)):
+    concatenated_row = J169[i] + J170[i] + J171[i] + J172[i] + J173[i]+ J174[i] + J175[i] + J176[i] 
+    W23.append(concatenated_row)
+##########  
+# varsigma 4 as identity map
+J177 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J177.append(temp_row)
+##########
+J178 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0
+                    temp_row.append(w)
+          J178.append(temp_row)
+##########
+J179 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 2
+                    w = 0  
+                    temp_row.append(w)
+          J179.append(temp_row)
+##########
+J180 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# alpha 51,52
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          J180.append(temp_row)
+##########
+J181 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for r in range(1, d+1):
+                for s in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          J181.append(temp_row)
+##########
+J182 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    if l==i and k==r and j==s:
+                        w=1  
+                    temp_row.append(w)
+          J182.append(temp_row)
+##########
+J183 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J183.append(temp_row)    
+##########
+J184 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          J184.append(temp_row)    
+##########
+for i in range(len(J177)):
+    concatenated_row = J177[i] + J178[i] + J179[i] + J180[i] + J181[i]+ J182[i] + J183[i] + J184[i] 
+    W23.append(concatenated_row)
+##########
+# Tau 3 as identity map
+J185 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J185.append(temp_row)
+##########
+J186 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0
+                    temp_row.append(w)
+          J186.append(temp_row)
+##########
+J187 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 2
+                    w = 0  
+                    temp_row.append(w)
+          J187.append(temp_row)
+##########
+J188 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# alpha 51,52
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          J188.append(temp_row)
+##########
+J189 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          J189.append(temp_row)
+##########
+J190 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J190.append(temp_row)
+##########
+J191 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for r in range(1, d+1):
+                    w = 0
+                    if l==i and j==r:
+                        w=1 
+                    temp_row.append(w)
+          J191.append(temp_row)    
+##########
+J192 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          J192.append(temp_row)    
+##########
+for i in range(len(J185)):
+    concatenated_row = J185[i] + J186[i] + J187[i] + J188[i] + J189[i]+ J190[i] + J191[i] + J192[i] 
+    W23.append(concatenated_row)
+##########
+# x4 as identity map
+J193 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J193.append(temp_row)
+##########
+J194 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0
+                    temp_row.append(w)
+          J194.append(temp_row)
+##########
+J195 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 2
+                    w = 0  
+                    temp_row.append(w)
+          J195.append(temp_row)
+##########
+J196 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# alpha 51,52
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          J196.append(temp_row)
+##########
+J197 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          J197.append(temp_row)
+##########
+J198 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          J198.append(temp_row)
+##########
+J199 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          J199.append(temp_row)    
+##########
+J200 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if l==i:
+                        w=1 
+                    temp_row.append(w)
+          J200.append(temp_row)    
+##########
+for i in range(len(J193)):
+    concatenated_row = J193[i] + J194[i] + J195[i] + J196[i] + J197[i]+ J198[i] + J199[i] + J200[i] 
+    W23.append(concatenated_row)
+#####################
+# print("weight matrix for twenty-four layer/twenty-three hidden layer")
+# print(W23)
+#####################
+
+# #Bias matrix for twenty-four layer/twenty-three hidden layer
+
+B23 = []
+
+# bias matrix for Phi'
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0              
+              temp_row.append(w)
+          B23.append(temp_row)
+
+# bias matrix for upsilon 1
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B23.append(temp_row)
+          
+# bias matrix for upsilon 3
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              temp_row.append(w)
+          B23.append(temp_row)
+
+# bias matrix for varsigma 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B23.append(temp_row)
+
+# bias matrix for varsigma 4
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B23.append(temp_row)
+
+# bias matrix for Tau 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B23.append(temp_row)
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B23.append(temp_row)   
+# #####################       
+# print('Printing B23')
+# for i in B23:
+#     print(i)
+##################################
+L23 = []  # upsilon 3 nodes
+for i in range(len(W23)):
+    temp_row = []
+    L23_i_entry = np.maximum((np.dot(W23[i], L22)+B23[i]), 0)
+    L23.append(L23_i_entry)
+#####################
+# print('Printing upsilon 3 nodes for twenty-four layer/twenty-three hidden layer')
+# for i in L23:
+#     print(i)
+##############
+# To construct weight matrix for twenty-fifth layer/twenty-fourth hidden layer is L24=W24*L23+B24
+W24 = []
+# Phi' as identity map
+K1 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    if j==i and k==l:
+                          w=1
+                    temp_row.append(w)
+          K1.append(temp_row)
+##########
+K2 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0  
+                    temp_row.append(w)
+          K2.append(temp_row)
+##########
+K3 = []
+for j in range(1, d+1):
+    for i in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 3
+                    w = 0  
+                    temp_row.append(w)
+          K3.append(temp_row)
+##########
+K4 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K4.append(temp_row)
+##########
+K5 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K5.append(temp_row)
+##########
+K6 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K6.append(temp_row)    
+##########
+K7 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          K7.append(temp_row)    
+##########
+for i in range(len(K1)):
+    concatenated_row = K1[i] + K2[i] + K3[i] + K4[i] + K5[i]+ K6[i] + K7[i] 
+    W24.append(concatenated_row)
+##########
+# upsilon 1 as identity map
+K8 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K8.append(temp_row)
+##########
+K9 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    if j==i:
+                          w=1 
+                    temp_row.append(w)
+          K9.append(temp_row)
+##########
+K10 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 3
+                    w = 0  
+                    temp_row.append(w)
+          K10.append(temp_row)
+##########
+K11 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K11.append(temp_row)
+##########
+K12 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K12.append(temp_row)
+##########
+K13 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K13.append(temp_row)    
+##########
+K14 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          K14.append(temp_row)    
+##########
+for i in range(len(K8)):
+    concatenated_row = K8[i] + K9[i] + K10[i] + K11[i] + K12[i]+ K13[i] + K14[i]
+    W24.append(concatenated_row)
+########## 
+# upsilon 3 as identity map
+K15 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K15.append(temp_row)
+##########
+K16 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          K16.append(temp_row)
+##########
+K17 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 3
+                    w = 0  
+                    if j==l:
+                        w=1
+                    temp_row.append(w)
+          K17.append(temp_row)
+##########
+K18 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K18.append(temp_row)
+##########
+K19 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K19.append(temp_row)
+##########
+K20= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K20.append(temp_row)    
+##########
+K21 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          K21.append(temp_row)    
+##########
+for i in range(len(K15)):
+    concatenated_row = K15[i] + K16[i] + K17[i] + K18[i] + K19[i]+ K20[i] + K21[i] 
+    W24.append(concatenated_row)
+########## 
+# alpha 61,62 nodes
+K22 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+       for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K22.append(temp_row)
+##########
+K23 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+       for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    if k==i:
+                          w=-1 /eps
+                    temp_row.append(w)
+          K23.append(temp_row)
+##########
+K24 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+       for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 3
+                    w = 0  
+                    if j==l:
+                        w=1/eps
+                    temp_row.append(w)
+          K24.append(temp_row)
+##########
+K25 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+       for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K25.append(temp_row)
+##########
+K26 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+       for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K26.append(temp_row)
+##########
+K27= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+       for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K27.append(temp_row)    
+##########
+K28 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+       for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          K28.append(temp_row)    
+##########
+for i in range(len(K22)):
+    concatenated_row = K22[i] + K23[i] + K24[i] + K25[i] + K26[i]+ K27[i] + K28[i] 
+    W24.append(concatenated_row)
+##########
+# varsigma 3 nodes as identity map
+K29 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K29.append(temp_row)
+##########
+K30 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          K30.append(temp_row)
+##########
+K31 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 3
+                    w = 0
+                    temp_row.append(w)
+          K31.append(temp_row)
+##########
+K32 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0    
+                    if l==i and k==r and j==s:
+                        w=1
+                    temp_row.append(w)
+          K32.append(temp_row)
+##########
+K33 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K33.append(temp_row)
+##########
+K34= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K34.append(temp_row)    
+##########
+K35 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          K35.append(temp_row)    
+##########
+for i in range(len(K29)):
+    concatenated_row = K29[i] + K30[i] + K31[i] + K32[i] + K33[i]+ K34[i] + K35[i] 
+    W24.append(concatenated_row)
+########## 
+# varsigma 4 nodes as identity map
+K36 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K36.append(temp_row)
+##########
+K37 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          K37.append(temp_row)
+##########
+K38 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 3
+                    w = 0
+                    temp_row.append(w)
+          K38.append(temp_row)
+##########
+K39 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K39.append(temp_row)
+##########
+K40 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0   
+                    if l==i and k==r and j==s:
+                        w=1 
+                    temp_row.append(w)
+          K40.append(temp_row)
+##########
+K41= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K41.append(temp_row)    
+##########
+K42 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          K42.append(temp_row)    
+##########
+for i in range(len(K36)):
+    concatenated_row = K36[i] + K37[i] + K38[i] + K39[i] + K40[i]+ K41[i] + K42[i] 
+    W24.append(concatenated_row) 
+##########    
+# Tau 3 nodes as identity map
+K43 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K43.append(temp_row)
+##########
+K44 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          K44.append(temp_row)
+##########
+K45 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 3
+                    w = 0
+                    temp_row.append(w)
+          K45.append(temp_row)
+##########
+K46 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K46.append(temp_row)
+##########
+K47 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          K47.append(temp_row)
+##########
+K48= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for k in range(1, d+1):
+                    w = 0
+                    if l==i and j==k:
+                        w=1 
+                    temp_row.append(w)
+          K48.append(temp_row)    
+##########
+K49 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          K49.append(temp_row)    
+##########
+for i in range(len(K43)):
+    concatenated_row = K43[i] + K44[i] + K45[i] + K46[i] + K47[i]+ K48[i] + K49[i] 
+    W24.append(concatenated_row) 
+##########    
+# x4 nodes as identity map
+K50 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K50.append(temp_row)
+##########
+K51 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          K51.append(temp_row)
+##########
+K52 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 3
+                    w = 0
+                    temp_row.append(w)
+          K52.append(temp_row)
+##########
+K53 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for j in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K53.append(temp_row)
+##########
+K54= []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for j in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          K54.append(temp_row)
+##########
+K55= []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K55.append(temp_row)    
+##########
+K56 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if l==i:
+                        w=1 
+                    temp_row.append(w)
+          K56.append(temp_row)    
+##########
+for i in range(len(K50)):
+    concatenated_row = K50[i] + K51[i] + K52[i] + K53[i] + K54[i]+ K55[i] + K56[i] 
+    W24.append(concatenated_row)     
+# ##################### 
+# print("weight matrix for twenty-four layer/twenty-three hidden layer")
+# print(W24)
+#####################
+
+# #Bias matrix for twenty-five layer/twenty-four hidden layer
+
+B24 = []
+
+# bias matrix for Phi'
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0              
+              temp_row.append(w)
+          B24.append(temp_row)
+
+# bias matrix for upsilon 1
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B24.append(temp_row)
+          
+# bias matrix for upsilon 3
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              temp_row.append(w)
+          B24.append(temp_row)
+          
+# bias matrix for alpha 61,62
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              if q==0:
+                  w=(-1/eps)+1
+              else:
+                    w=-1/eps
+              temp_row.append(w)
+          B24.append(temp_row)
+          
+# bias matrix for varsigma 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B24.append(temp_row)
+
+# # bias matrix for varsigma 4
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B24.append(temp_row)
+
+# bias matrix for Tau 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B24.append(temp_row)
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B24.append(temp_row)   
+# #####################       
+# print('Printing B24')
+# for i in B24:
+#     print(i)
+
+##################################
+L24 = []  # alpha 61,62 nodes
+for i in range(len(W24)):
+    temp_row = []
+    L24_i_entry = np.maximum((np.dot(W24[i], L23)+B24[i]), 0)
+    L24.append(L24_i_entry)
+
+# print('Printing alpha 61,62 nodes for twenty-fifth layer/twenty-fourth hidden layer')
+# for i in L24:
+#     print(i)
+##############
+# To construct weight matrix for twenty-sixth layer/twenty-fifth hidden layer is L25=W25*L24+B25
+W25 = []
+# Phi' as identity map
+K57 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    if j==i and k==l:
+                          w=1
+                    temp_row.append(w)
+          K57.append(temp_row)
+##########
+K58 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0  
+                    temp_row.append(w)
+          K58.append(temp_row)
+##########
+K59 = []
+for j in range(1, d+1):
+    for i in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 3
+                    w = 0  
+                    temp_row.append(w)
+          K59.append(temp_row)
+##########
+K60 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# alpha 61,62
+              for r in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          K60.append(temp_row)
+##########
+K61 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K61.append(temp_row)
+##########
+K62 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K62.append(temp_row)
+##########
+K63= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K63.append(temp_row)    
+##########
+K64= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          K64.append(temp_row)    
+##########
+for i in range(len(K57)):
+    concatenated_row = K57[i]+K58[i]+K59[i]+K60[i]+K61[i]+ K62[i]+ K63[i]+ K64[i] 
+    W25.append(concatenated_row)
+########## 
+# upsilon 1 as identity map
+K65 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K65.append(temp_row)
+##########
+K66 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    if j==i:
+                          w=1 
+                    temp_row.append(w)
+          K66.append(temp_row)
+##########
+K67 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 3
+                    w = 0  
+                    temp_row.append(w)
+          K67.append(temp_row)
+##########
+
+K68 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# alpha 61,62
+              for r in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          K68.append(temp_row)
+##########
+K69 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K69.append(temp_row)
+##########
+K70 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K70.append(temp_row)
+##########
+K71 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K71.append(temp_row)    
+##########
+K72 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          K72.append(temp_row)    
+##########
+for i in range(len(K65)):
+    concatenated_row = K65[i] + K66[i] + K67[i] + K68[i] + K69[i]+ K70[i]+ K71[i]+ K72[i]
+    W25.append(concatenated_row)
+########## 
+# upsilon 3 as identity map
+K73 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K73.append(temp_row)
+##########
+K74 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          K74.append(temp_row)
+##########
+K75 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 3
+                    w = 0  
+                    if j==l:
+                        w=1
+                    temp_row.append(w)
+          K75.append(temp_row)
+##########
+K76 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# alpha 61,62
+              for r in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          K76.append(temp_row)
+##########
+K77 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K77.append(temp_row)
+##########
+K78 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K78.append(temp_row)
+##########
+K79= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K79.append(temp_row)    
+##########
+K80 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          K80.append(temp_row)    
+##########
+for i in range(len(K73)):
+    concatenated_row = K73[i] + K74[i] + K75[i] + K76[i]+ K77[i]+ K78[i]+ K79[i]+ K80[i]
+    W25.append(concatenated_row)
+########## 
+# Gamma 11 nodes
+K81 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    if j==i and k==l:
+                          w=1
+                    temp_row.append(w)
+          K81.append(temp_row)
+##########
+K82 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          K82.append(temp_row)
+##########
+K83 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 3
+                    w = 0  
+                    temp_row.append(w)
+          K83.append(temp_row)
+##########
+K84 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# alpha 61,62
+              for r in range(1, d+1):
+                for q in range(2):
+                    w = 0 
+                    if j==l and k==r:
+                        if q==0:
+                          w=1 
+                        else:
+                             w=-1
+                    temp_row.append(w)
+          K84.append(temp_row)
+##########
+K85 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K85.append(temp_row)
+##########
+K86 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K86.append(temp_row)
+##########
+K87= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K87.append(temp_row)    
+##########
+K88 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          K88.append(temp_row)    
+##########
+for i in range(len(K81)):
+    concatenated_row = K81[i] + K82[i] + K83[i] + K84[i]+ K85[i]+ K86[i]+ K87[i]+ K88[i] 
+    W25.append(concatenated_row)
+##########
+# varsigma 3 nodes as identity map
+K89 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K89.append(temp_row)
+##########
+K90 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          K90.append(temp_row)
+##########
+K91 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 3
+                    w = 0
+                    temp_row.append(w)
+          K91.append(temp_row)
+##########
+K92 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for l in range(1, d+1):# alpha 61,62
+              for r in range(1, d+1):
+                for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          K92.append(temp_row)
+##########
+K93 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0    
+                    if l==i and k==r and j==s:
+                        w=1
+                    temp_row.append(w)
+          K93.append(temp_row)
+##########
+K94 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K94.append(temp_row)
+##########
+K95= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K95.append(temp_row)    
+##########
+K96 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          K96.append(temp_row)    
+##########
+for i in range(len(K89)):
+    concatenated_row = K89[i] + K90[i] + K91[i] + K92[i] + K93[i] + K94[i]+ K95[i] + K96[i] 
+    W25.append(concatenated_row)
+########## 
+# varsigma 4 nodes as identity map
+K97 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K97.append(temp_row)
+##########
+K98 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          K98.append(temp_row)
+##########
+K99 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 3
+                    w = 0
+                    temp_row.append(w)
+          K99.append(temp_row)
+##########
+K100 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for l in range(1, d+1):# alpha 61,62
+              for r in range(1, d+1):
+                for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          K100.append(temp_row)
+##########
+K101 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K101.append(temp_row)
+##########
+K102 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0   
+                    if l==i and k==r and j==s:
+                        w=1 
+                    temp_row.append(w)
+          K102.append(temp_row)
+##########
+K103= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K103.append(temp_row)    
+##########
+K104 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          K104.append(temp_row)    
+##########
+for i in range(len(K97)):
+    concatenated_row = K97[i] + K98[i] +K99[i] + K100[i] + K101[i] + K102[i]+ K103[i] + K104[i] 
+    W25.append(concatenated_row) 
+##########    
+# Tau 3 nodes as identity map
+K105 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K105.append(temp_row)
+##########
+K106 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          K106.append(temp_row)
+##########
+K107 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 3
+                    w = 0
+                    temp_row.append(w)
+          K107.append(temp_row)
+##########
+K108 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# alpha 61,62
+              for j in range(1, d+1):
+                for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          K108.append(temp_row)
+##########
+K109 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for j in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K109.append(temp_row)
+##########
+K110 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for j in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          K110.append(temp_row)
+##########
+K111= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for k in range(1, d+1):
+                    w = 0
+                    if l==i and j==k:
+                        w=1 
+                    temp_row.append(w)
+          K111.append(temp_row)    
+##########
+K112 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          K112.append(temp_row)    
+##########
+for i in range(len(K105)):
+    concatenated_row = K105[i] + K106[i] + K107[i] + K108[i] + K109[i] + K110[i]+ K111[i] + K112[i] 
+    W25.append(concatenated_row) 
+##########    
+# x4 nodes as identity map
+K113 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K113.append(temp_row)
+##########
+K114 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          K114.append(temp_row)
+##########
+K115 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 3
+                    w = 0
+                    temp_row.append(w)
+          K115.append(temp_row)
+##########
+K116 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# alpha 61,62
+              for r in range(1, d+1):
+                for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          K116.append(temp_row)
+##########
+K117 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for j in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          K117.append(temp_row)
+##########
+K118= []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for j in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          K118.append(temp_row)
+##########
+K119= []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          K119.append(temp_row)    
+##########
+K120 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if l==i:
+                        w=1 
+                    temp_row.append(w)
+          K120.append(temp_row)    
+##########
+for i in range(len(K113)):
+    concatenated_row = K113[i] + K114[i] + K115[i] +K116[i] + K117[i] + K118[i]+ K119[i] + K120[i] 
+    W25.append(concatenated_row)     
+##################### 
+# print("weight matrix for twenty-sixth layer/twenty-fifth hidden layer")
+# print(W25)
+##################### 
+# #Bias matrix for twenty-sixth layer/twenty-fifth hidden layer
+
+B25 = []
+
+# bias matrix for Phi'
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0              
+              temp_row.append(w)
+          B25.append(temp_row)
+
+# bias matrix for upsilon 1
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B25.append(temp_row)
+          
+# bias matrix for upsilon 3
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              temp_row.append(w)
+          B25.append(temp_row)
+          
+# bias matrix for Gamma 11
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = -1
+              temp_row.append(w)
+          B25.append(temp_row)
+          
+# bias matrix for varsigma 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B25.append(temp_row)
+
+# bias matrix for varsigma 4
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B25.append(temp_row)
+
+# bias matrix for Tau 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B25.append(temp_row)
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B25.append(temp_row)   
+# #####################       
+# print('Printing B25')
+# for i in B25:
+#     print(i)
+##################################
+L25 = []  # Gamma 11 nodes
+for i in range(len(W25)):
+    temp_row = []
+    L25_i_entry = np.maximum((np.dot(W25[i], L24)+B25[i]), 0)
+    L25.append(L25_i_entry)
+##################################
+# print('Printing Gamma 11 nodes for twenty-fifth layer/twenty-fourth hidden layer')
+# for i in L25:
+#     print(i)
+##############
+# To construct weight matrix for twenty-seventh layer/twenty-sixth hidden layer is L26=W26*L25+B26
+W26 = []
+# Phi' as identity map
+M1 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    if j==i and k==l:
+                          w=1
+                    temp_row.append(w)
+          M1.append(temp_row)
+##########
+M2 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0  
+                    temp_row.append(w)
+          M2.append(temp_row)
+##########
+M3 = []
+for j in range(1, d+1):
+    for i in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 3
+                    w = 0  
+                    temp_row.append(w)
+          M3.append(temp_row)
+##########
+M4 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 11
+              for r in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          M4.append(temp_row)
+##########
+M5 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M5.append(temp_row)
+##########
+M6 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M6.append(temp_row)
+##########
+M7= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M7.append(temp_row)    
+##########
+M8= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          M8.append(temp_row)    
+##########
+for i in range(len(M1)):
+    concatenated_row = M1[i] + M2[i] + M3[i] + M4[i] + M5[i] + M6[i] + M7[i] + M8[i] 
+    W26.append(concatenated_row)
+########## 
+# upsilon 1 as identity map
+M9 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M9.append(temp_row)
+##########
+M10 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    if j==i:
+                          w=1 
+                    temp_row.append(w)
+          M10.append(temp_row)
+##########
+M11 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 3
+                    w = 0  
+                    temp_row.append(w)
+          M11.append(temp_row)
+##########
+
+M12 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 11
+              for r in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          M12.append(temp_row)
+##########
+M13 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M13.append(temp_row)
+##########
+M14 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M14.append(temp_row)
+##########
+M15 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M15.append(temp_row)    
+##########
+M16 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          M16.append(temp_row)    
+##########
+for i in range(len(M9)):
+    concatenated_row = M9[i] + M10[i] + M11[i] + M12[i] + M13[i]+ M14[i]+ M15[i]+ M16[i]
+    W26.append(concatenated_row)
+########## 
+# upsilon 4
+M17 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M17.append(temp_row)
+##########
+M18 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          M18.append(temp_row)
+##########
+M19 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 3
+                    w = 0  
+                    if j==l:
+                        w=1
+                    temp_row.append(w)
+          M19.append(temp_row)
+##########
+M20 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 11
+              for k in range(1, d+1):
+                    w = 0 
+                    if j==l and k>j:
+                          w=-C  
+                    temp_row.append(w)
+          M20.append(temp_row)
+##########
+M21 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M21.append(temp_row)
+##########
+M22 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M22.append(temp_row)
+##########
+M23= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M23.append(temp_row)    
+##########
+M24 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          M24.append(temp_row)    
+##########
+for i in range(len(M17)):
+    concatenated_row = M17[i] + M18[i] + M19[i] + M20[i]+ M21[i]+ M22[i]+ M23[i]+ M24[i]
+    W26.append(concatenated_row)
+##########
+# varsigma 3 nodes as identity map
+M25 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M25.append(temp_row)
+##########
+M26 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          M26.append(temp_row)
+##########
+M27 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 3
+                    w = 0
+                    temp_row.append(w)
+          M27.append(temp_row)
+##########
+M28 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 11
+              for r in range(1, d+1):
+                    w = 0 
+                    temp_row.append(w)
+          M28.append(temp_row)
+##########
+M29 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0    
+                    if l==i and k==r and j==s:
+                        w=1
+                    temp_row.append(w)
+          M29.append(temp_row)
+##########
+M30 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M30.append(temp_row)
+##########
+M31= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M31.append(temp_row)    
+##########
+M32 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          M32.append(temp_row)    
+##########
+for i in range(len(M25)):
+    concatenated_row = M25[i] + M26[i] + M27[i] + M28[i] + M29[i] + M30[i]+ M31[i] + M32[i] 
+    W26.append(concatenated_row)
+########## 
+# varsigma 4 nodes as identity map
+M33 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M33.append(temp_row)
+##########
+M34 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          M34.append(temp_row)
+##########
+M35 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 3
+                    w = 0
+                    temp_row.append(w)
+          M35.append(temp_row)
+##########
+M36 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 11
+              for r in range(1, d+1):
+                    w = 0 
+                    temp_row.append(w)
+          M36.append(temp_row)
+##########
+M37 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for r in range(1, d+1):
+                for s in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M37.append(temp_row)
+##########
+M38 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0   
+                    if l==i and k==r and j==s:
+                        w=1 
+                    temp_row.append(w)
+          M38.append(temp_row)
+##########
+M39= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M39.append(temp_row)    
+##########
+M40 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          M40.append(temp_row)    
+##########
+for i in range(len(M33)):
+    concatenated_row = M33[i] + M34[i] +M35[i] + M36[i] + M37[i] + M38[i]+ M39[i] + M40[i] 
+    W26.append(concatenated_row) 
+##########    
+# Tau 3 nodes as identity map
+M41 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M41.append(temp_row)
+##########
+M42 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          M42.append(temp_row)
+##########
+M43 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 3
+                    w = 0
+                    temp_row.append(w)
+          M43.append(temp_row)
+##########
+M44 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# Gamma 11
+              for j in range(1, d+1):
+                    w = 0 
+                    temp_row.append(w)
+          M44.append(temp_row)
+##########
+M45 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M45.append(temp_row)
+##########
+M46 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          M46.append(temp_row)
+##########
+M47= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for k in range(1, d+1):
+                    w = 0
+                    if l==i and j==k:
+                        w=1 
+                    temp_row.append(w)
+          M47.append(temp_row)    
+##########
+M48 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          M48.append(temp_row)    
+##########
+for i in range(len(M41)):
+    concatenated_row = M41[i] + M42[i] + M43[i] + M44[i] + M45[i] + M46[i]+ M47[i] + M48[i] 
+    W26.append(concatenated_row) 
+##########    
+# x4 nodes as identity map
+M49 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M49.append(temp_row)
+##########
+M50 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          M50.append(temp_row)
+##########
+M51 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 3
+                    w = 0
+                    temp_row.append(w)
+          M51.append(temp_row)
+##########
+M52 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 11
+              for r in range(1, d+1):
+                    w = 0 
+                    temp_row.append(w)
+          M52.append(temp_row)
+##########
+M53 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for j in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M53.append(temp_row)
+##########
+M54= []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for j in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          M54.append(temp_row)
+##########
+M55= []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M55.append(temp_row)    
+##########
+M56 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if l==i:
+                        w=1 
+                    temp_row.append(w)
+          M56.append(temp_row)    
+##########
+for i in range(len(M49)):
+    concatenated_row = M49[i] + M50[i] +M51[i] + M52[i] + M53[i]+ M54[i] + M55[i] + M56[i] 
+    W26.append(concatenated_row)     
+##################### 
+# print("weight matrix for twenty-seventh layer/twenty-sixth hidden layer")
+# print(W26)
+#####################
+# #Bias matrix for twenty-seventh layer/twenty-sixth hidden layer
+
+B26 = []
+
+# bias matrix for Phi'
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0              
+              temp_row.append(w)
+          B26.append(temp_row)
+
+# bias matrix for upsilon 1
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B26.append(temp_row)
+          
+# bias matrix for upsilon 4
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              temp_row.append(w)
+          B26.append(temp_row)
+
+# bias matrix for varsigma 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B26.append(temp_row)
+
+# bias matrix for varsigma 4
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B26.append(temp_row)
+
+# bias matrix for Tau 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B26.append(temp_row)
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B26.append(temp_row)   
+# #####################       
+# print('Printing B26')
+# for i in B26:
+#     print(i)
+##################################
+L26 = []  # upsilon 4 nodes
+for i in range(len(W26)):
+    temp_row = []
+    L26_i_entry = np.maximum((np.dot(W26[i], L25)+B26[i]), 0)
+    L26.append(L26_i_entry)
+##################################
+# print('Printing upsilon 4 nodes for twenty-seventh layer/twenty-sixth hidden layer')
+# for i in L26:
+#     print(i)
+##############
+# To construct weight matrix for twenty-eighth layer/twenty-seventh hidden layer is L27=W27*L26+B27
+W27 = []
+# Phi' as identity map
+M57 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    if j==i and k==l:
+                          w=1
+                    temp_row.append(w)
+          M57.append(temp_row)
+##########
+M58 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0  
+                    temp_row.append(w)
+          M58.append(temp_row)
+##########
+M59 = []
+for j in range(1, d+1):
+    for i in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 4
+                    w = 0  
+                    temp_row.append(w)
+          M59.append(temp_row)
+##########
+M60 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M60.append(temp_row)
+##########
+M61 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M61.append(temp_row)
+##########
+M62= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M62.append(temp_row)    
+##########
+M63= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          M63.append(temp_row)    
+##########
+for i in range(len(M57)):
+    concatenated_row = M57[i] + M58[i] + M59[i] + M60[i] + M61[i] + M62[i] + M63[i] 
+    W27.append(concatenated_row)
+########## 
+# upsilon 1 as identity map
+M64 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M64.append(temp_row)
+##########
+M65 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    if j==i:
+                          w=1 
+                    temp_row.append(w)
+          M65.append(temp_row)
+##########
+M66 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 4
+                    w = 0  
+                    temp_row.append(w)
+          M66.append(temp_row)
+##########
+M67 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M67.append(temp_row)
+##########
+M68 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M68.append(temp_row)
+##########
+M69 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M69.append(temp_row)    
+##########
+M70 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          M70.append(temp_row)    
+##########
+for i in range(len(M64)):
+    concatenated_row = M64[i] + M65[i] + M66[i] + M67[i] + M68[i]+ M69[i]+ M70[i]
+    W27.append(concatenated_row)
+########## 
+# upsilon 4
+M71 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M71.append(temp_row)
+##########
+M72 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          M72.append(temp_row)
+##########
+M73 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 4
+                    w = 0  
+                    if j==l:
+                        w=1
+                    temp_row.append(w)
+          M73.append(temp_row)
+##########
+M74 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M74.append(temp_row)
+##########
+M75 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M75.append(temp_row)
+##########
+M76= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M76.append(temp_row)    
+##########
+M77 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          M77.append(temp_row)    
+##########
+for i in range(len(M71)):
+    concatenated_row = M71[i] + M72[i] + M73[i] + M74[i]+ M75[i]+ M76[i]+ M77[i]
+    W27.append(concatenated_row)
+##########
+# rho 71,72
+M78 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M78.append(temp_row)
+##########
+M79 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    if j==i:
+                        w=1/eps
+                    temp_row.append(w)
+          M79.append(temp_row)
+##########
+M80 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 4
+                    w = 0  
+                    if k==l:
+                        w=-1/eps
+                    temp_row.append(w)
+          M80.append(temp_row)
+##########
+M81 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M81.append(temp_row)
+##########
+M82 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M82.append(temp_row)
+##########
+M83= []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M83.append(temp_row)    
+##########
+M84 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          M84.append(temp_row)    
+##########
+for i in range(len(M78)):
+    concatenated_row = M78[i] + M79[i] + M80[i] + M81[i]+ M82[i]+ M83[i]+ M84[i]
+    W27.append(concatenated_row)
+##########
+# varrho 71,72
+M85 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M85.append(temp_row)
+##########
+M86 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    if j==i:
+                        w=-1/eps
+                    temp_row.append(w)
+          M86.append(temp_row)
+##########
+M87 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 4
+                    w = 0  
+                    if k==l:
+                        w=1/eps
+                    temp_row.append(w)
+          M87.append(temp_row)
+##########
+M88 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M88.append(temp_row)
+##########
+M89 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M89.append(temp_row)
+##########
+M90= []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M90.append(temp_row)    
+##########
+M91 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          M91.append(temp_row)    
+##########
+for i in range(len(M85)):
+    concatenated_row = M85[i] + M86[i] + M87[i] + M88[i]+ M89[i]+ M90[i]+ M91[i]
+    W27.append(concatenated_row)
+##########
+# beta 51,52
+M92 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M92.append(temp_row)
+##########
+M93 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    if j==i and j!=k:
+                        w=1/eps
+                    if k==i and j!=k:
+                        w=-1/eps
+                    temp_row.append(w)
+          M93.append(temp_row)
+##########
+M94 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 4
+                    w = 0  
+                    temp_row.append(w)
+          M94.append(temp_row)
+##########
+M95 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M95.append(temp_row)
+##########
+M96 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M96.append(temp_row)
+##########
+M97= []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M97.append(temp_row)    
+##########
+M98 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          M98.append(temp_row)    
+##########
+for i in range(len(M92)):
+    concatenated_row = M92[i] + M93[i] + M94[i] + M95[i]+ M96[i]+ M97[i]+ M98[i]
+    W27.append(concatenated_row)
+##########
+# varsigma 3 nodes as identity map
+M99 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M99.append(temp_row)
+##########
+M100 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          M100.append(temp_row)
+##########
+M101 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 3
+                    w = 0
+                    temp_row.append(w)
+          M101.append(temp_row)
+##########
+M102 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0    
+                    if l==i and k==r and j==s:
+                        w=1
+                    temp_row.append(w)
+          M102.append(temp_row)
+##########
+M103 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M103.append(temp_row)
+##########
+M104= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M104.append(temp_row)    
+##########
+M105 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          M105.append(temp_row)    
+##########
+for i in range(len(M99)):
+    concatenated_row = M99[i] + M100[i] + M101[i] + M102[i] + M103[i] + M104[i]+ M105[i] 
+    W27.append(concatenated_row)
+########## 
+# varsigma 4 nodes as identity map
+M106 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M106.append(temp_row)
+##########
+M107 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          M107.append(temp_row)
+##########
+M108 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 4
+                    w = 0
+                    temp_row.append(w)
+          M108.append(temp_row)
+##########
+M109 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M109.append(temp_row)
+##########
+M110 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0   
+                    if l==i and k==r and j==s:
+                        w=1 
+                    temp_row.append(w)
+          M110.append(temp_row)
+##########
+M111= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M111.append(temp_row)    
+##########
+M112 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          M112.append(temp_row)    
+##########
+for i in range(len(M106)):
+    concatenated_row = M106[i] + M107[i] +M108[i] + M109[i] + M110[i] + M111[i]+ M112[i]
+    W27.append(concatenated_row) 
+##########    
+# Tau 3 nodes as identity map
+M113 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M113.append(temp_row)
+##########
+M114 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          M114.append(temp_row)
+##########
+M115 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 4
+                    w = 0
+                    temp_row.append(w)
+          M115.append(temp_row)
+##########
+
+M116 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M116.append(temp_row)
+##########
+M117 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          M117.append(temp_row)
+##########
+M118= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for k in range(1, d+1):
+                    w = 0
+                    if l==i and j==k:
+                        w=1 
+                    temp_row.append(w)
+          M118.append(temp_row)    
+##########
+M119 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          M119.append(temp_row)    
+##########
+for i in range(len(M113)):
+    concatenated_row = M113[i] + M114[i] + M115[i] + M116[i] + M117[i] + M118[i]+ M119[i]
+    W27.append(concatenated_row) 
+##########    
+# x4 nodes as identity map
+M120 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M120.append(temp_row)
+##########
+M121 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          M121.append(temp_row)
+##########
+M122 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 4
+                    w = 0
+                    temp_row.append(w)
+          M122.append(temp_row)
+##########
+M123 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for j in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M123.append(temp_row)
+##########
+M124= []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for j in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          M124.append(temp_row)
+##########
+M125= []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M125.append(temp_row)    
+##########
+M126 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if l==i:
+                        w=1 
+                    temp_row.append(w)
+          M126.append(temp_row)    
+##########
+for i in range(len(M120)):
+    concatenated_row = M120[i] + M121[i] +M122[i] + M123[i] + M124[i]+ M125[i] + M126[i] 
+    W27.append(concatenated_row)     
+##################### 
+# print("weight matrix for twenty-eight layer/twenty-seven hidden layer")
+# print(W27)
+#####################
+# #Bias matrix for twenty-eight layer/twenty-seven hidden layer
+
+B27 = []
+
+# bias matrix for Phi'
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0              
+              temp_row.append(w)
+          B27.append(temp_row)
+
+# bias matrix for upsilon 1
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B27.append(temp_row)
+          
+# bias matrix for upsilon 4
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              temp_row.append(w)
+          B27.append(temp_row)
+
+# bias matrix for rho 71,72
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              if q==0:
+                  w=1
+              temp_row.append(w)
+          B27.append(temp_row)
+
+# bias matrix for varrho 71,72
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              if q==0:
+                  w=1
+              temp_row.append(w)
+          B27.append(temp_row) 
+
+# bias matrix for beta 51,52
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              if q==0:
+                  w=1-(1/eps)
+              else:
+                  w=-(1/eps)
+              temp_row.append(w)
+          B27.append(temp_row)
+          
+# bias matrix for varsigma 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B27.append(temp_row)
+
+# bias matrix for varsigma 4
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B27.append(temp_row)
+
+# bias matrix for Tau 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B27.append(temp_row)
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B27.append(temp_row)   
+# #####################       
+# print('Printing B27')
+# for i in B27:
+#     print(i)
+##################################
+L27 = []  # rho 71,72, varrho 71,72, beta 51,52 nodes
+for i in range(len(W27)):
+    temp_row = []
+    L27_i_entry = np.maximum((np.dot(W27[i], L26)+B27[i]), 0)
+    L27.append(L27_i_entry)
+##################################
+# print('Printing rho 71,72, varrho 71,72, beta 51,52 nodes nodes for twenty-eighth layer/twenty-seven hidden layer')
+# for i in L27:
+#     print(i)
+##############
+# To construct weight matrix for twenty-ninth layer/twenty-eighth hidden layer is L28=W28*L27+B28
+W28 = []
+# Phi' as identity map
+M127 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    if j==i and k==l:
+                          w=1
+                    temp_row.append(w)
+          M127.append(temp_row)
+##########
+M128 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0  
+                    temp_row.append(w)
+          M128.append(temp_row)
+##########
+M129 = []
+for j in range(1, d+1):
+    for i in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 4
+                    w = 0  
+                    temp_row.append(w)
+          M129.append(temp_row)
+##########
+M130 = []
+for j in range(1, d+1):
+    for i in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# rho 71,72
+             for k in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M130.append(temp_row)
+##########
+M131 = []
+for j in range(1, d+1):
+    for i in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# varrho 71,72
+             for k in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M131.append(temp_row)
+##########
+M132 = []
+for j in range(1, d+1):
+    for i in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# beta 51,52
+             for k in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M132.append(temp_row)
+##########
+M133 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M133.append(temp_row)
+##########
+M134 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M134.append(temp_row)
+##########
+M135= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M135.append(temp_row)    
+##########
+M136= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          M136.append(temp_row)    
+##########
+for i in range(len(M127)):
+    concatenated_row = M127[i] +M128[i] + M129[i] +M130[i] + M131[i] + M132[i] + M133[i] + M134[i] + M135[i] + M136[i] 
+    W28.append(concatenated_row)
+########## 
+# upsilon 1 as identity map
+M137 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M137.append(temp_row)
+##########
+M138 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    if j==i :
+                          w=1 
+                    temp_row.append(w)
+          M138.append(temp_row)
+##########
+M139 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 4
+                    w = 0  
+                    temp_row.append(w)
+          M139.append(temp_row)
+##########
+M140 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# rho 71,72
+             for k in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M140.append(temp_row)
+##########
+M141 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# varrho 71,72
+             for k in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M141.append(temp_row)
+##########
+M142 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# beta 51,52
+             for k in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M142.append(temp_row)
+##########
+M143 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M143.append(temp_row)
+##########
+M144 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M144.append(temp_row)
+##########
+M145= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M145.append(temp_row)    
+##########
+M146= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          M146.append(temp_row)    
+##########
+for i in range(len(M137)):
+    concatenated_row = M137[i] +M138[i] + M139[i] +M140[i] + M141[i] + M142[i] + M143[i] + M144[i] + M145[i] + M146[i] 
+    W28.append(concatenated_row)
+##########
+# upsilon 4
+M147 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M147.append(temp_row)
+##########
+M148 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          M148.append(temp_row)
+##########
+M149 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 4
+                    w = 0  
+                    if j==l:
+                        w=1
+                    temp_row.append(w)
+          M149.append(temp_row)
+##########
+M150 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# rho 71,72
+             for k in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M150.append(temp_row)
+##########
+M151 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# varrho 71,72
+             for k in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M151.append(temp_row)
+##########
+M152 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# beta 51,52
+             for k in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M152.append(temp_row)
+##########
+M153 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M153.append(temp_row)
+##########
+M154 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M154.append(temp_row)
+##########
+M155= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M155.append(temp_row)    
+##########
+M156 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          M156.append(temp_row)    
+##########
+for i in range(len(M147)):
+    concatenated_row = M147[i] + M148[i] + M149[i] + M150[i] + M151[i] + M152[i] + M153[i]+ M154[i]+ M155[i]+ M156[i]
+    W28.append(concatenated_row)
+##########
+# Gamma 12
+M157 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    if j==i and k==l:
+                        w=1
+                    temp_row.append(w)
+          M157.append(temp_row)
+##########
+M158 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          M158.append(temp_row)
+##########
+M159 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 4
+                    w = 0  
+                    temp_row.append(w)
+          M159.append(temp_row)
+##########
+M160 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# rho 71,72
+             for i in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    if j==l and k==i:
+                        if q==0:
+                           w=1
+                        else:
+                            w=-1
+                    temp_row.append(w)
+          M160.append(temp_row)
+##########
+M161 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# varrho 71,72
+             for i in range(1, d+1):
+                for q in range(2):
+                    w = 0 
+                    if j==l and k==i:
+                        if q==0:
+                           w=1
+                        else:
+                            w=-1 
+                    temp_row.append(w)
+          M161.append(temp_row)
+##########
+M162 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# beta 51,52
+             for k in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M162.append(temp_row)
+##########
+M163 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M163.append(temp_row)
+##########
+M164 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M164.append(temp_row)
+##########
+M165= []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M165.append(temp_row)    
+##########
+M166 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          M166.append(temp_row)    
+##########
+for i in range(len(M157)):
+    concatenated_row = M157[i] + M158[i] + M159[i] + M160[i] + M161[i] + M162[i] + M163[i]+ M164[i]+ M165[i]+ M166[i]
+    W28.append(concatenated_row)
+##########
+# Gamma 13
+M167 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    if j==i and l==k:
+                        w=1
+                    temp_row.append(w)
+          M167.append(temp_row)
+##########
+M168 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          M168.append(temp_row)
+##########
+M169 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 4
+                    w = 0  
+                    temp_row.append(w)
+          M169.append(temp_row)
+##########
+M170 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# rho 71,72
+             for k in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M170.append(temp_row)
+##########
+M171 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# varrho 71,72
+             for k in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M171.append(temp_row)
+##########
+M172 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# beta 51,52
+             for i in range(1, d+1):
+                for q in range(2):
+                    w = 0 
+                    if j==l and k==i:
+                        if q==0:
+                           w=1
+                        else:
+                            w=-1  
+                    temp_row.append(w)
+          M172.append(temp_row)
+##########
+M173 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M173.append(temp_row)
+##########
+M174 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M174.append(temp_row)
+##########
+M175= []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M175.append(temp_row)    
+##########
+M176 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          M176.append(temp_row)    
+##########
+for i in range(len(M167)):
+    concatenated_row = M167[i] + M168[i] + M169[i] + M170[i] + M171[i] + M172[i] + M173[i] + M174[i]+ M175[i]+ M176[i]
+    W28.append(concatenated_row)
+##########
+# varsigma 3 nodes as identity map
+M177 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M177.append(temp_row)
+##########
+M178 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          M178.append(temp_row)
+##########
+M179 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 3
+                    w = 0
+                    temp_row.append(w)
+          M179.append(temp_row)
+##########
+M180 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# rho 71,72
+             for r in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M180.append(temp_row)
+##########
+M181 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# varrho 71,72
+             for r in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M181.append(temp_row)
+##########
+M182 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# beta 51,52
+             for r in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M182.append(temp_row)
+##########
+M183 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0    
+                    if l==i and k==r and j==s:
+                        w=1
+                    temp_row.append(w)
+          M183.append(temp_row)
+##########
+M184 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M184.append(temp_row)
+##########
+M185= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M185.append(temp_row)    
+##########
+M186 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          M186.append(temp_row)    
+##########
+for i in range(len(M177)):
+    concatenated_row = M177[i] + M178[i] + M179[i] + M180[i] + M181[i] + M182[i] + M183[i]+ M184[i]+ M185[i]+ M186[i]
+    W28.append(concatenated_row)
+########## 
+# varsigma 4 nodes as identity map
+M187 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M187.append(temp_row)
+##########
+M188 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          M188.append(temp_row)
+##########
+M189 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 4
+                    w = 0
+                    temp_row.append(w)
+          M189.append(temp_row)
+##########
+M190 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# rho 71,72
+             for r in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M190.append(temp_row)
+##########
+M191 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# varrho 71,72
+             for r in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M191.append(temp_row)
+##########
+M192 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# beta 51,52
+             for r in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M192.append(temp_row)
+##########
+M193 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M193.append(temp_row)
+##########
+M194 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0   
+                    if l==i and k==r and j==s:
+                        w=1 
+                    temp_row.append(w)
+          M194.append(temp_row)
+##########
+M195= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M195.append(temp_row)    
+##########
+M196 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          M196.append(temp_row)    
+##########
+for i in range(len(M187)):
+    concatenated_row = M187[i] + M188[i] + M189[i] + M190[i] + M191[i] + M192[i] + M193[i]+ M194[i]+ M195[i]+ M196[i]
+    W28.append(concatenated_row) 
+##########    
+# Tau 3 nodes as identity map
+M197 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M197.append(temp_row)
+##########
+M198 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          M198.append(temp_row)
+##########
+M199 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 4
+                    w = 0
+                    temp_row.append(w)
+          M199.append(temp_row)
+##########
+M200 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# rho 71,72
+             for k in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M200.append(temp_row)
+##########
+M201 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# varrho 71,72
+             for k in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M201.append(temp_row)
+##########
+M202 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# beta 51,52
+             for k in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M202.append(temp_row)
+##########
+
+M203 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M203.append(temp_row)
+##########
+M204 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          M204.append(temp_row)
+##########
+M205= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for k in range(1, d+1):
+                    w = 0
+                    if l==i and j==k:
+                        w=1 
+                    temp_row.append(w)
+          M205.append(temp_row)    
+##########
+M206 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          M206.append(temp_row)    
+##########
+for i in range(len(M197)):
+    concatenated_row = M197[i] + M198[i] + M199[i] + M200[i] +  M201[i] + M202[i] + M203[i]+ M204[i]+ M205[i]+ M206[i]
+    W28.append(concatenated_row) 
+##########    
+# x4 nodes as identity map
+M207 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M207.append(temp_row)
+##########
+M208 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          M208.append(temp_row)
+##########
+M209 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 4
+                    w = 0
+                    temp_row.append(w)
+          M209.append(temp_row)
+##########
+M210 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# rho 71,72
+             for k in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M210.append(temp_row)
+##########
+M211 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# varrho 71,72
+             for k in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M211.append(temp_row)
+##########
+M212 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# beta 51,52
+             for k in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          M212.append(temp_row)
+##########
+M213 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for j in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          M213.append(temp_row)
+##########
+M214= []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for j in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          M214.append(temp_row)
+##########
+M215= []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          M215.append(temp_row)    
+##########
+M216 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if l==i:
+                        w=1 
+                    temp_row.append(w)
+          M216.append(temp_row)    
+##########
+for i in range(len(M207)):
+    concatenated_row = M207[i] + M208[i] + M209[i] + M210[i] + M211[i] + M212[i] + M213[i]+ M214[i]+ M215[i]+ M216[i]
+    W28.append(concatenated_row)     
+##################### 
+# print("weight matrix for twenty-ninth layer/twenty-eight hidden layer")
+# print(W28)
+#####################
+# #Bias matrix for twenty-ninth layer/twenty-eight hidden layer
+
+B28 = []
+
+# bias matrix for Phi'
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0              
+              temp_row.append(w)
+          B28.append(temp_row)
+
+# bias matrix for upsilon 1
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B28.append(temp_row)
+          
+# bias matrix for upsilon 4
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              temp_row.append(w)
+          B28.append(temp_row)
+
+
+# bias matrix for Gamma 12
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = -2
+              temp_row.append(w)
+          B28.append(temp_row) 
+
+# bias matrix for Gamma 13
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = -1
+              temp_row.append(w)
+          B28.append(temp_row)
+          
+# bias matrix for varsigma 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B28.append(temp_row)
+
+# bias matrix for varsigma 4
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B28.append(temp_row)
+
+# bias matrix for Tau 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B28.append(temp_row)
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B28.append(temp_row)   
+# #####################       
+# print('Printing B28')
+# for i in B28:
+#     print(i)
+
+##################################
+L28 = []  # Gamma 12, Gamma 13 nodes
+for i in range(len(W28)):
+    temp_row = []
+    L28_i_entry = np.maximum((np.dot(W28[i], L27)+B28[i]), 0)
+    L28.append(L28_i_entry)
+##################################
+# print('Printing Gamma 12, Gamma 13 nodes for twenty-ninth layer/twenty-eighth hidden layer')
+# for i in L28:
+#     print(i)
+##############
+# To construct weight matrix for thirteeth layer/twenty-ninth hidden layer is L29=W29*L28+B29
+W29 = []
+# Phi' as identity map
+N1 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    if j==i and k==l:
+                          w=1
+                    temp_row.append(w)
+          N1.append(temp_row)
+##########
+N2 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0  
+                    temp_row.append(w)
+          N2.append(temp_row)
+##########
+N3 = []
+for j in range(1, d+1):
+    for i in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 4
+                    w = 0  
+                    temp_row.append(w)
+          N3.append(temp_row)
+##########
+N4 = []
+for j in range(1, d+1):
+    for i in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 12
+             for k in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          N4.append(temp_row)
+##########
+N5 = []
+for j in range(1, d+1):
+    for i in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 13
+             for k in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          N5.append(temp_row)
+##########
+
+N6 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N6.append(temp_row)
+##########
+N7 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N7.append(temp_row)
+##########
+N8= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N8.append(temp_row)    
+##########
+N9= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N9.append(temp_row)    
+##########
+for i in range(len(N1)):
+    concatenated_row = N1[i] +N2[i] + N3[i] +N4[i] + N5[i] + N6[i] + N7[i] + N8[i] + N9[i]
+    W29.append(concatenated_row)
+########## 
+# upsilon 5 
+N10 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N10.append(temp_row)
+##########
+N11 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          N11.append(temp_row)
+##########
+N12 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 4
+                    w = 0  
+                    if j==l :
+                          w=1 
+                    temp_row.append(w)
+          N12.append(temp_row)
+##########
+N13 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 12
+             for k in range(1, d+1):
+                    w = 0 
+                    if j==l and k<j:
+                          w=-C  
+                    temp_row.append(w)
+          N13.append(temp_row)
+##########
+N14 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma13
+             for k in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          N14.append(temp_row)
+##########
+N15 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N15.append(temp_row)
+##########
+N16 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N16.append(temp_row)
+##########
+N17= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N17.append(temp_row)    
+##########
+N18= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N18.append(temp_row)    
+##########
+for i in range(len(N10)):
+    concatenated_row = N10[i] +N11[i] + N12[i] +N13[i] + N14[i] + N15[i] + N16[i] + N17[i] + N18[i] 
+    W29.append(concatenated_row)
+##########
+# upsilon 6
+N19 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N19.append(temp_row)
+##########
+N20 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    if j==i:
+                        w=1
+                    temp_row.append(w)
+          N20.append(temp_row)
+##########
+N21 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 4
+                    w = 0  
+                    temp_row.append(w)
+          N21.append(temp_row)
+##########
+N22 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 12
+             for k in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          N22.append(temp_row)
+##########
+N23 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 13
+             for k in range(1, d+1):
+                    w = 0  
+                    if j==l and k>j:
+                        w=-C
+                    temp_row.append(w)
+          N23.append(temp_row)
+##########
+N24 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N24.append(temp_row)
+##########
+N25 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for r in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N25.append(temp_row)
+##########
+N26= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N26.append(temp_row)    
+##########
+N27 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N27.append(temp_row)    
+##########
+for i in range(len(N19)):
+    concatenated_row = N19[i] + N20[i] + N21[i] + N22[i] + N23[i] + N24[i] + N25[i]+ N26[i]+ N27[i]
+    W29.append(concatenated_row)
+##########
+# varsigma 3 nodes as identity map
+N28 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N28.append(temp_row)
+##########
+N29 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          N29.append(temp_row)
+##########
+N30 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 4
+                    w = 0
+                    temp_row.append(w)
+          N30.append(temp_row)
+##########
+N31 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# Gamma 12
+             for r in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          N31.append(temp_row)
+##########
+N32 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# Gamma 13
+             for r in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          N32.append(temp_row)
+##########
+N33 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0    
+                    if l==i and k==r and j==s:
+                        w=1
+                    temp_row.append(w)
+          N33.append(temp_row)
+##########
+N34 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N34.append(temp_row)
+##########
+N35= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N35.append(temp_row)    
+##########
+N36 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N36.append(temp_row)    
+##########
+for i in range(len(N28)):
+    concatenated_row = N28[i] + N29[i] + N30[i] + N31[i] + N32[i] + N33[i] + N34[i]+ N35[i]+ N36[i]
+    W29.append(concatenated_row)
+########## 
+# varsigma 4 nodes as identity map
+N37 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N37.append(temp_row)
+##########
+N38 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          N38.append(temp_row)
+##########
+N39 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 4
+                    w = 0
+                    temp_row.append(w)
+          N39.append(temp_row)
+##########
+N40 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# Gamma 12
+             for r in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          N40.append(temp_row)
+##########
+N41 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# Gamma 13
+             for r in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          N41.append(temp_row)
+##########
+N42 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N42.append(temp_row)
+##########
+N43 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0   
+                    if l==i and k==r and j==s:
+                        w=1 
+                    temp_row.append(w)
+          N43.append(temp_row)
+##########
+N44= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N44.append(temp_row)    
+##########
+N45 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N45.append(temp_row)    
+##########
+for i in range(len(N37)):
+    concatenated_row = N37[i] + N38[i] + N39[i] + N40[i] + N41[i] + N42[i] + N43[i]+ N44[i]+ N45[i]
+    W29.append(concatenated_row) 
+##########    
+# Tau 3 nodes as identity map
+N46 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N46.append(temp_row)
+##########
+N47 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          N47.append(temp_row)
+##########
+N48 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 4
+                    w = 0
+                    temp_row.append(w)
+          N48.append(temp_row)
+##########
+N49 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# Gamma 12
+             for k in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          N49.append(temp_row)
+##########
+N50 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# Gamma 13
+             for k in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          N50.append(temp_row)
+##########
+N51 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N51.append(temp_row)
+##########
+N52 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          N52.append(temp_row)
+##########
+N53= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for k in range(1, d+1):
+                    w = 0
+                    if l==i and j==k:
+                        w=1 
+                    temp_row.append(w)
+          N53.append(temp_row)    
+##########
+N54 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N54.append(temp_row)    
+##########
+for i in range(len(N46)):
+    concatenated_row = N46[i] + N47[i] + N48[i] + N49[i] +  N50[i] + N51[i] + N52[i]+ N53[i]+ N54[i]
+    W29.append(concatenated_row) 
+##########    
+# x4 nodes as identity map
+N55 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N55.append(temp_row)
+##########
+N56 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 1
+                    w = 0 
+                    temp_row.append(w)
+          N56.append(temp_row)
+##########
+N57= []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 4
+                    w = 0
+                    temp_row.append(w)
+          N57.append(temp_row)
+##########
+N58 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 12
+             for k in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          N58.append(temp_row)
+##########
+N59 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 13
+             for k in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          N59.append(temp_row)
+##########
+N60 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for j in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N60.append(temp_row)
+##########
+N61= []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for j in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          N61.append(temp_row)
+##########
+N62= []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N62.append(temp_row)    
+##########
+N63 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if l==i:
+                        w=1 
+                    temp_row.append(w)
+          N63.append(temp_row)    
+##########
+for i in range(len(N55)):
+    concatenated_row = N55[i] + N56[i] + N57[i] + N58[i] + N59[i] + N60[i] + N61[i]+ N62[i]+ N63[i]
+    W29.append(concatenated_row)     
+##################### 
+# print("weight matrix for thirteeth layer/twenty-ninth hidden layer")
+# print(W29)
+#####################
+# #Bias matrix for thirteeth layer/twenty-ninth hidden layer
+
+B29 = []
+
+# bias matrix for Phi'
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0              
+              temp_row.append(w)
+          B29.append(temp_row)
+
+# bias matrix for upsilon 5
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B29.append(temp_row)
+          
+# bias matrix for upsilon 6
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              temp_row.append(w)
+          B29.append(temp_row)
+          
+# bias matrix for varsigma 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B29.append(temp_row)
+
+# bias matrix for varsigma 4
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B29.append(temp_row)
+
+# bias matrix for Tau 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B29.append(temp_row)
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B29.append(temp_row)   
+# #####################       
+# print('Printing B29')
+# for i in B29:
+#     print(i)
+
+##################################
+L29 = []  # upsilon 5, upsilon 6 nodes
+for i in range(len(W29)):
+    temp_row = []
+    L29_i_entry = np.maximum((np.dot(W29[i], L28)+B29[i]), 0)
+    L29.append(L29_i_entry)
+##################################
+# print('Printing upsilon 5, upsilon 6 nodes for thirteeth layer/twenty-ninth hidden layer')
+# for i in L29:
+#     print(i)
+##############
+# To construct weight matrix for thirty-one layer/thirteeth hidden layer is L30=W30*L29+B30
+W30= []
+# Phi' as identity map
+N64 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    if j==i and k==l:
+                          w=1
+                    temp_row.append(w)
+          N64.append(temp_row)
+##########
+N65 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0  
+                    temp_row.append(w)
+          N65.append(temp_row)
+##########
+N66 = []
+for j in range(1, d+1):
+    for i in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 6
+                    w = 0  
+                    temp_row.append(w)
+          N66.append(temp_row)
+#########
+N67 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N67.append(temp_row)
+##########
+N68 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N68.append(temp_row)
+##########
+N69= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N69.append(temp_row)    
+##########
+N70= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N70.append(temp_row)    
+##########
+for i in range(len(N64)):
+    concatenated_row = N64[i] +N65[i]+ N66[i] + N67[i] +N68[i] + N69[i] + N70[i]
+    W30.append(concatenated_row)
+########## 
+# upsilon 5 as identity map 
+N71 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N71.append(temp_row)
+##########
+N72 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    if j==i:
+                          w=1 
+                    temp_row.append(w)
+          N72.append(temp_row)
+##########
+N73 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 6
+                    w = 0  
+                    temp_row.append(w)
+          N73.append(temp_row)
+##########
+N74 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N74.append(temp_row)
+##########
+N75 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N75.append(temp_row)
+##########
+N76= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N76.append(temp_row)    
+##########
+N77= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N77.append(temp_row)    
+##########
+for i in range(len(N71)):
+    concatenated_row = N71[i] +N72[i] + N73[i] +N74[i] + N75[i] + N76[i] + N77[i] 
+    W30.append(concatenated_row)
+##########
+# upsilon 6 as identity map
+N78 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N78.append(temp_row)
+##########
+N79 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    temp_row.append(w)
+          N79.append(temp_row)
+##########
+N80 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 6
+                    w = 0 
+                    if j==l:
+                        w=1 
+                    temp_row.append(w)
+          N80.append(temp_row)
+##########
+N81 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N81.append(temp_row)
+##########
+N82 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N82.append(temp_row)
+##########
+N83= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N83.append(temp_row)    
+##########
+N84 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N84.append(temp_row)    
+##########
+for i in range(len(N78)):
+    concatenated_row = N78[i] + N79[i] + N80[i] + N81[i] + N82[i] + N83[i] + N84[i]
+    W30.append(concatenated_row)
+##########
+# rho 81,82
+N85 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N85.append(temp_row)
+##########
+N86 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    temp_row.append(w)
+          N86.append(temp_row)
+##########
+N87 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 6
+                    w = 0 
+                    if j==l and k!=j:
+                        w=1 /eps
+                    if k==l and k!=j:
+                        w=-1 /eps                        
+                    temp_row.append(w)
+          N87.append(temp_row)
+##########
+N88 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N88.append(temp_row)
+##########
+N89 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N89.append(temp_row)
+##########
+N90= []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N90.append(temp_row)    
+##########
+N91 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N91.append(temp_row)    
+##########
+for i in range(len(N85)):
+    concatenated_row = N85[i] + N86[i] + N87[i] + N88[i] + N89[i] + N90[i] + N91[i]
+    W30.append(concatenated_row)
+##########
+# varrho 81,82
+N92 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N92.append(temp_row)
+##########
+N93 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    temp_row.append(w)
+          N93.append(temp_row)
+##########
+N94 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 6
+                    w = 0 
+                    if j==l and k!=j:
+                        w=-1 /eps
+                    if k==l and k!=j:
+                        w=1 /eps  
+                    temp_row.append(w)
+          N94.append(temp_row)
+##########
+N95 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N95.append(temp_row)
+##########
+N96 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N96.append(temp_row)
+##########
+N97= []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N97.append(temp_row)    
+##########
+N98 = []
+for j in range(1, d+1):
+   for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N98.append(temp_row)    
+##########
+for i in range(len(N92)):
+    concatenated_row = N92[i] + N93[i] + N94[i] + N95[i] + N96[i] + N97[i] + N98[i]
+    W30.append(concatenated_row)
+##########
+# rho 1,2
+T1 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          T1.append(temp_row)
+##########
+T2 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 5
+                    w = 0
+                    if j==l:
+                         w=1 /eps
+                    temp_row.append(w)
+          T2.append(temp_row)
+##########
+T3 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 6
+                    w = 0
+                    if j==l:
+                         w=-1 /eps 
+                    temp_row.append(w)
+          T3.append(temp_row)
+##########
+T4 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          T4.append(temp_row)
+##########
+T5 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          T5.append(temp_row)
+##########
+T6= []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          T6.append(temp_row)    
+##########
+T7 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          T7.append(temp_row)    
+##########
+for i in range(len(T1)):
+    concatenated_row = T1[i] + T2[i] + T3[i] + T4[i] + T5[i] + T6[i] + T7[i]
+    W30.append(concatenated_row)
+##########
+# varsigma 3 nodes as identity map
+N99= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N99.append(temp_row)
+##########
+N100 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    temp_row.append(w)
+          N100.append(temp_row)
+##########
+N101 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0
+                    temp_row.append(w)
+          N101.append(temp_row)
+##########
+N102 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0    
+                    if l==i and k==r and j==s:
+                        w=1
+                    temp_row.append(w)
+          N102.append(temp_row)
+##########
+N103 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N103.append(temp_row)
+##########
+N104= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N104.append(temp_row)    
+##########
+N105 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N105.append(temp_row)    
+##########
+for i in range(len(N99)):
+    concatenated_row = N99[i] + N100[i] + N101[i] + N102[i] + N103[i] + N104[i] + N105[i]
+    W30.append(concatenated_row)
+########## 
+# varsigma 4 nodes as identity map
+N106 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N106.append(temp_row)
+##########
+N107 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    temp_row.append(w)
+          N107.append(temp_row)
+##########
+N108 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0
+                    temp_row.append(w)
+          N108.append(temp_row)
+##########
+N109 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N109.append(temp_row)
+##########
+N110 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0   
+                    if l==i and k==r and j==s:
+                        w=1 
+                    temp_row.append(w)
+          N110.append(temp_row)
+##########
+N111= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N111.append(temp_row)    
+##########
+N112 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N112.append(temp_row)    
+##########
+for i in range(len(N106)):
+    concatenated_row = N106[i] + N107[i] + N108[i] + N109[i] + N110[i] + N111[i] + N112[i]
+    W30.append(concatenated_row) 
+##########    
+# Tau 3 nodes as identity map
+N113 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N113.append(temp_row)
+##########
+N114 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    temp_row.append(w)
+          N114.append(temp_row)
+##########
+N115 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0
+                    temp_row.append(w)
+          N115.append(temp_row)
+##########
+N116 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N116.append(temp_row)
+##########
+N117 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          N117.append(temp_row)
+##########
+N118= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for k in range(1, d+1):
+                    w = 0
+                    if l==i and j==k:
+                        w=1 
+                    temp_row.append(w)
+          N118.append(temp_row)    
+##########
+N119 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N119.append(temp_row)    
+##########
+for i in range(len(N113)):
+    concatenated_row = N113[i] + N114[i] + N115[i] + N116[i] +  N117[i] + N118[i] + N119[i]
+    W30.append(concatenated_row) 
+##########    
+# x4 nodes as identity map
+N120 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N120.append(temp_row)
+##########
+N121 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    temp_row.append(w)
+          N121.append(temp_row)
+##########
+N122= []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0
+                    temp_row.append(w)
+          N122.append(temp_row)
+##########
+N123 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for j in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N123.append(temp_row)
+##########
+N124= []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for j in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0   
+                    temp_row.append(w)
+          N124.append(temp_row)
+##########
+N125= []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N125.append(temp_row)    
+##########
+N126 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if l==i:
+                        w=1 
+                    temp_row.append(w)
+          N126.append(temp_row)    
+##########
+for i in range(len(N120)):
+    concatenated_row = N120[i] + N121[i] + N122[i] + N123[i] + N124[i] + N125[i] + N126[i]
+    W30.append(concatenated_row)     
+##################### 
+# print("weight matrix for thirty-one layer/thirteeth hidden layer")
+# print(W30)
+#####################
+# #Bias matrix for thirty-one layer/thirteeth hidden layer
+
+B30 = []
+
+# bias matrix for Phi'
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0              
+              temp_row.append(w)
+          B30.append(temp_row)
+
+# bias matrix for upsilon 5
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B30.append(temp_row)
+          
+# bias matrix for upsilon 6
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              temp_row.append(w)
+          B30.append(temp_row)
+
+# bias matrix for rho 81,82
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+       for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              if q==0:
+                  w=1
+              temp_row.append(w)
+          B30.append(temp_row)  
+
+# bias matrix for varrho 81,82
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+       for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              if q==0:
+                  w=1
+              temp_row.append(w)
+          B30.append(temp_row)  
+
+# bias matrix for rho 1,2
+
+for j in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              if q==0:
+                  w=1-(1/eps)
+              else:
+                  w=-(1/eps)
+              temp_row.append(w)
+          B30.append(temp_row)  
+         
+# bias matrix for varsigma 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B30.append(temp_row)
+
+# bias matrix for varsigma 4
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B30.append(temp_row)
+
+# bias matrix for Tau 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B30.append(temp_row)
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B30.append(temp_row)   
+# #####################       
+# print('Printing B30')
+# for i in B30:
+#     print(i)
+##################################
+L30 = []  # rho 81,82, varrho 81,82 nodes
+for i in range(len(W30)):
+    temp_row = []
+    L30_i_entry = np.maximum((np.dot(W30[i], L29)+B30[i]), 0)
+    L30.append(L30_i_entry)
+##################################
+# print('Printing rho 81,82, varrho 81,82 nodes for thirty-one layer/thirteeth hidden layer')
+# for i in L30:
+#     print(i)
+##############
+# To construct weight matrix for thirty-two layer/thirty-one hidden layer is L31=W31*L30+B31
+W31= []
+
+# upsilon 5 as identity map 
+N127 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N127.append(temp_row)
+##########
+N128 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    if j==i:
+                          w=1 
+                    temp_row.append(w)
+          N128.append(temp_row)
+##########
+N129 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 6
+                    w = 0  
+                    temp_row.append(w)
+          N129.append(temp_row)
+##########
+N130 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# rho 81,82
+            for k in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N130.append(temp_row)
+##########
+N131 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# varrho 81,82
+            for k in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N131.append(temp_row)
+##########
+T15 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# rho 1,2
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          T15.append(temp_row)
+##########
+N132 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N132.append(temp_row)
+##########
+N133 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N133.append(temp_row)
+##########
+N134= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N134.append(temp_row)    
+##########
+N135= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N135.append(temp_row)    
+##########
+for i in range(len(N127)):
+    concatenated_row = N127[i] +N128[i] + N129[i] +N130[i] + N131[i]+ T15[i]+N132[i] + N133[i] + N134[i] + N135[i] 
+    W31.append(concatenated_row)
+##########
+# upsilon 6 as identity map 
+N136 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N136.append(temp_row)
+##########
+N137 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    temp_row.append(w)
+          N137.append(temp_row)
+##########
+N138 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 6
+                    w = 0 
+                    if j==l:
+                          w=1  
+                    temp_row.append(w)
+          N138.append(temp_row)
+##########
+N139 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# rho 81,82
+            for k in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N139.append(temp_row)
+##########
+N140 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# varrho 81,82
+            for k in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N140.append(temp_row)
+##########
+T16 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# rho 1,2
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          T16.append(temp_row)
+##########
+N141 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N141.append(temp_row)
+##########
+N142 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N142.append(temp_row)
+##########
+N143= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N143.append(temp_row)    
+##########
+N144= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N144.append(temp_row)    
+##########
+for i in range(len(N136)):
+    concatenated_row = N136[i] +N137[i] + N138[i] +N139[i] + N140[i]+ T16[i] +N141[i] + N142[i] + N143[i] + N144[i] 
+    W31.append(concatenated_row)
+##########
+# Gamma 14 
+N145 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    if j==i and k==l:
+                          w=1 
+                    temp_row.append(w)
+          N145.append(temp_row)
+##########
+N146 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    temp_row.append(w)
+          N146.append(temp_row)
+##########
+N147 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 6
+                    w = 0  
+                    temp_row.append(w)
+          N147.append(temp_row)
+##########
+N148 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# rho 81,82
+            for i in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    if j==l and k==i:
+                        if q==0:
+                          w=1 
+                        else:
+                             w=-1
+                    temp_row.append(w)
+          N148.append(temp_row)
+##########
+N149 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# varrho 81,82
+            for i in range(1, d+1):
+                for q in range(2):
+                    w = 0
+                    if j==l and k==i:
+                        if q==0:
+                          w=1 
+                        else:
+                             w=-1  
+                    temp_row.append(w)
+          N149.append(temp_row)
+# ##########
+T18 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# rho 1,2
+                for q in range(2):
+                    w = 0
+                    if j==l :
+                        if q==0:
+                          w=1 
+                        else:
+                             w=-1 
+                    temp_row.append(w)
+          T18.append(temp_row)
+##########
+N150 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N150.append(temp_row)
+##########
+N151 = []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N151.append(temp_row)
+##########
+N152= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N152.append(temp_row)    
+##########
+N153= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N153.append(temp_row)    
+##########
+for i in range(len(N145)):
+    concatenated_row = N145[i] +N146[i] + N147[i] +N148[i] + N149[i]+ T18[i] +N150[i] + N151[i] + N152[i] + N153[i] 
+    W31.append(concatenated_row)
+##########
+# rho 91,92 
+N154 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N154.append(temp_row)
+##########
+N155 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    temp_row.append(w)
+          N155.append(temp_row)
+##########
+N156 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 6
+                    w = 0  
+                    if j==l:
+                          w=1 /eps
+                    temp_row.append(w)
+          N156.append(temp_row)
+##########
+N157 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# rho 81,82
+            for i in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N157.append(temp_row)
+##########
+N158 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# varrho 81,82
+            for i in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N158.append(temp_row)
+##########
+T19 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# rho 1,2
+                for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          T19.append(temp_row)
+##########
+N159 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N159.append(temp_row)
+##########
+N160 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N160.append(temp_row)
+##########
+N161= []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N161.append(temp_row)    
+##########
+N162= []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N162.append(temp_row)    
+##########
+for i in range(len(N154)):
+    concatenated_row = N154[i] +N155[i] + N156[i] +N157[i] + N158[i]+ T19[i] +N159[i] + N160[i] + N161[i] + N162[i] 
+    W31.append(concatenated_row)
+##########
+# varrho 91,92 
+N163 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N163.append(temp_row)
+##########
+N164 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    temp_row.append(w)
+          N164.append(temp_row)
+##########
+N165 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 6
+                    w = 0  
+                    if j==l:
+                          w=-1 /eps
+                    temp_row.append(w)
+          N165.append(temp_row)
+##########
+N166 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# rho 81,82
+            for i in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N166.append(temp_row)
+##########
+N167 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# varrho 81,82
+            for i in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N167.append(temp_row)
+##########
+T20 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# rho 1,2
+                for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          T20.append(temp_row)
+##########
+N168 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N168.append(temp_row)
+##########
+N169 = []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N169.append(temp_row)
+##########
+N170= []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N170.append(temp_row)    
+##########
+N171= []
+for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N171.append(temp_row)    
+##########
+for i in range(len(N163)):
+    concatenated_row = N163[i] +N164[i] + N165[i] +N166[i] + N167[i]+ T20[i] +N168[i] + N169[i] + N170[i] + N171[i] 
+    W31.append(concatenated_row)
+##########
+# varsigma 3 
+N172 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N172.append(temp_row)
+##########
+N173 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    temp_row.append(w)
+          N173.append(temp_row)
+##########
+N174 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0  
+                    temp_row.append(w)
+          N174.append(temp_row)
+##########
+N175 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# rho 81,82
+            for r in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N175.append(temp_row)
+##########
+N176 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# varrho 81,82
+            for r in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N176.append(temp_row)
+##########
+T21 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for l in range(1, d+1):# rho 1,2
+                for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          T21.append(temp_row)
+##########
+N177 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    if l==i and k==r and j==s:
+                          w=1
+                    temp_row.append(w)
+          N177.append(temp_row)
+##########
+N178 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N178.append(temp_row)
+##########
+N179= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N179.append(temp_row)    
+##########
+N180= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N180.append(temp_row)    
+##########
+for i in range(len(N172)):
+    concatenated_row = N172[i] +N173[i] + N174[i] +N175[i] + N176[i]+ T21[i] +N177[i] + N178[i] + N179[i] + N180[i] 
+    W31.append(concatenated_row)
+##########
+# varsigma 4 
+N181 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N181.append(temp_row)
+##########
+N182 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    temp_row.append(w)
+          N182.append(temp_row)
+##########
+N183 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0  
+                    temp_row.append(w)
+          N183.append(temp_row)
+##########
+N184 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# rho 81,82
+            for r in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N184.append(temp_row)
+##########
+N185 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# varrho 81,82
+            for r in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N185.append(temp_row)
+##########
+T22 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for l in range(1, d+1):# rho 1,2
+                for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          T22.append(temp_row)
+##########
+N186 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          N186.append(temp_row)
+##########
+N187 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    if l==i and k==r and j==s:
+                          w=1 
+                    temp_row.append(w)
+          N187.append(temp_row)
+##########
+N188= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N188.append(temp_row)    
+##########
+N189= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N189.append(temp_row)    
+##########
+for i in range(len(N181)):
+    concatenated_row = N181[i] +N182[i] + N183[i] +N184[i] + N185[i] + T22[i] +N186[i] + N187[i] + N188[i] + N189[i] 
+    W31.append(concatenated_row)
+##########
+# Tau 3 
+N190 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N190.append(temp_row)
+##########
+N191 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    temp_row.append(w)
+          N191.append(temp_row)
+##########
+N192 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0  
+                    temp_row.append(w)
+          N192.append(temp_row)
+##########
+N193 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# rho 81,82
+            for r in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N193.append(temp_row)
+##########
+N194 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# varrho 81,82
+            for r in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N194.append(temp_row)
+##########
+T23 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# rho 1,2
+                for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          T23.append(temp_row)
+##########
+N195 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          N195.append(temp_row)
+##########
+N196 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          N196.append(temp_row)
+##########
+N197= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for r in range(1, d+1):
+                    w = 0
+                    if l==i and j==r :
+                          w=1 
+                    temp_row.append(w)
+          N197.append(temp_row)    
+##########
+N198= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N198.append(temp_row)    
+##########
+for i in range(len(N190)):
+    concatenated_row = N190[i] +N191[i] + N192[i] +N193[i] + N194[i]+ T23[i] +N195[i] + N196[i] + N197[i] + N198[i] 
+    W31.append(concatenated_row)
+##########
+# x 4 
+N199 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N199.append(temp_row)
+##########
+N200 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    temp_row.append(w)
+          N200.append(temp_row)
+##########
+N201 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0  
+                    temp_row.append(w)
+          N201.append(temp_row)
+##########
+N202 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# rho 81,82
+            for r in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N202.append(temp_row)
+##########
+N203 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# varrho 81,82
+            for r in range(1, d+1):
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N203.append(temp_row)
+##########
+T24 = []
+for l in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# rho 1,2
+                for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          T24.append(temp_row)
+##########
+N204 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for j in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          N204.append(temp_row)
+##########
+N205 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for j in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N205.append(temp_row)
+##########
+N206= []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for r in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N206.append(temp_row)    
+##########
+N207= []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if l==i:
+                         w=1 
+                    temp_row.append(w)
+          N207.append(temp_row)    
+##########
+for i in range(len(N199)):
+    concatenated_row = N199[i] +N200[i] + N201[i] +N202[i] + N203[i]+ T24[i] +N204[i] + N205[i] + N206[i] + N207[i] 
+    W31.append(concatenated_row)
+##########
+#weight matrix for thirty-two layer/thirty-one hidden layer")
+# print(W31)
+#####################
+# #Bias matrix for thirty-two layer/thirty-one hidden layer
+
+B31 = []
+
+# bias matrix for upsilon 5
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B31.append(temp_row)
+          
+# bias matrix for upsilon 6
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              temp_row.append(w)
+          B31.append(temp_row)
+          
+# bias matrix for Gamma 14
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = -3
+              temp_row.append(w)
+          B31.append(temp_row)
+          
+# bias matrix for rho 91,92.
+
+for j in range(1, d+1):
+       for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              if q==0:
+                  w=1
+              temp_row.append(w)
+          B31.append(temp_row)  
+
+# bias matrix for varrho 91,92
+
+for j in range(1, d+1):
+       for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              if q==0:
+                  w=1
+              temp_row.append(w)
+          B31.append(temp_row)  
+          
+# bias matrix for varsigma 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B31.append(temp_row)
+
+# bias matrix for varsigma 4
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B31.append(temp_row)
+
+# bias matrix for Tau 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B31.append(temp_row)
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B31.append(temp_row)   
+# #####################       
+# print('Printing B31')
+# for i in B31:
+#     print(i)
+##################################
+L31 = []  # rho 81,82, varrho 81,82 nodes
+for i in range(len(W31)):
+    temp_row = []
+    L31_i_entry = np.maximum((np.dot(W31[i], L30)+B31[i]), 0)
+    L31.append(L31_i_entry)
+##################################
+
+# print('Printing rho 81,82, varrho 81,82 nodes for thirty-two layer/thirty-one hidden layer')
+# for i in L31:
+#     print(i)
+# #####################
+# To construct weight matrix for thirty-three layer/thirty-two hidden layer is L32=W32*L31+B32
+W32= []
+##########
+# upsilon 6 as identity map 
+
+N208 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    temp_row.append(w)
+          N208.append(temp_row)
+##########
+N209 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 6
+                    w = 0 
+                    if j==l:
+                          w=1  
+                    temp_row.append(w)
+          N209.append(temp_row)
+##########
+N210 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 14
+            for k in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          N210.append(temp_row)
+##########
+N211 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# rho 91,92
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N211.append(temp_row)
+##########
+N212 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# varrho 91,92
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N212.append(temp_row)
+##########
+N213 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for r in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N213.append(temp_row)
+##########
+N214 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for r in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N214.append(temp_row)
+##########
+N215= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N215.append(temp_row)    
+##########
+N216= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N216.append(temp_row)    
+##########
+for i in range(len(N208)):
+    concatenated_row = N208[i] +N209[i] + N210[i] +N211[i] + N212[i] +N213[i] + N214[i] + N215[i] + N216[i] 
+    W32.append(concatenated_row)
+##########
+# upsilon 7  
+
+N217 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    if j==i:
+                          w=1 
+                    temp_row.append(w)
+          N217.append(temp_row)
+##########
+N218 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 6
+                    w = 0  
+                    temp_row.append(w)
+          N218.append(temp_row)
+##########
+N219 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 14
+            for k in range(1, d+1):
+                    w = 0 
+                    if j==l and j!=k:
+                          w=-C 
+                    temp_row.append(w)
+          N219.append(temp_row)
+##########
+N220 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# rho 91,92
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N220.append(temp_row)
+##########
+N221 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# varrho 91,92
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N221.append(temp_row)
+##########
+N222 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N222.append(temp_row)
+##########
+N223 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N223.append(temp_row)
+##########
+N224= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N224.append(temp_row)    
+##########
+N225= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N225.append(temp_row)    
+##########
+for i in range(len(N217)):
+    concatenated_row = N217[i] +N218[i] + N219[i] +N220[i] + N221[i] +N222[i] + N223[i] + N224[i] + N225[i] 
+    W32.append(concatenated_row)
+##########
+# Gamma 15  
+
+N226 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    temp_row.append(w)
+          N226.append(temp_row)
+##########
+N227 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 6
+                    w = 0  
+                    temp_row.append(w)
+          N227.append(temp_row)
+##########
+N228 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 14
+            for k in range(1, d+1):
+                    w = 0 
+                    temp_row.append(w)
+          N228.append(temp_row)
+##########
+N229 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# rho 91,92
+                for q in range(2):
+                    w = 0  
+                    if j==l:
+                        if q==0:
+                          w=1 
+                        else:
+                            w=-1
+                    temp_row.append(w)
+          N229.append(temp_row)
+##########
+N230 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# varrho 91,92
+                for q in range(2):
+                    w = 0 
+                    if j==l:
+                        if q==0:
+                          w=1 
+                        else:
+                            w=-1 
+                    temp_row.append(w)
+          N230.append(temp_row)
+##########
+N231 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N231.append(temp_row)
+##########
+N232 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N232.append(temp_row)
+##########
+N233= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N233.append(temp_row)    
+##########
+N234= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N234.append(temp_row)    
+##########
+for i in range(len(N226)):
+    concatenated_row = N226[i] +N227[i] + N228[i] +N229[i] + N230[i] +N231[i] + N232[i] + N233[i] + N234[i] 
+    W32.append(concatenated_row)
+##########
+# varsigma 3  
+
+N235 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    temp_row.append(w)
+          N235.append(temp_row)
+##########
+N236 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0  
+                    temp_row.append(w)
+          N236.append(temp_row)
+##########
+N237 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# Gamma 14
+            for r in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          N237.append(temp_row)
+##########
+N238 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# rho 91,92
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N238.append(temp_row)
+##########
+N239 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# varrho 91,92
+                for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          N239.append(temp_row)
+##########
+N240 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    if l==i and k==r and j==s:
+                          w=1  
+                    temp_row.append(w)
+          N240.append(temp_row)
+##########
+N241 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for r in range(0, n+1):
+                for s in range(1, d+1):
+                    w = 0 
+                    temp_row.append(w)
+          N241.append(temp_row)
+##########
+N242= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N242.append(temp_row)    
+##########
+N243= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N243.append(temp_row)    
+##########
+for i in range(len(N235)):
+    concatenated_row = N235[i] +N236[i] + N237[i] +N238[i] + N239[i] +N240[i] + N241[i] + N242[i] + N243[i] 
+    W32.append(concatenated_row)
+##########
+# varsigma 4  
+
+N244 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    temp_row.append(w)
+          N244.append(temp_row)
+##########
+N245 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0  
+                    temp_row.append(w)
+          N245.append(temp_row)
+##########
+N246 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# Gamma 14
+            for r in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          N246.append(temp_row)
+##########
+N247 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# rho 91,92
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N247.append(temp_row)
+##########
+N248 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# varrho 91,92
+                for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          N248.append(temp_row)
+##########
+N249 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          N249.append(temp_row)
+##########
+N250 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0
+                    if l==i and k==r and j==s:
+                          w=1   
+                    temp_row.append(w)
+          N250.append(temp_row)
+##########
+N251= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N251.append(temp_row)    
+##########
+N252= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N252.append(temp_row)    
+##########
+for i in range(len(N244)):
+    concatenated_row = N244[i] +N245[i] + N246[i] +N247[i] + N248[i] +N249[i] + N250[i] + N251[i] + N252[i] 
+    W32.append(concatenated_row)
+####################
+# Tau 3  
+
+N253 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    temp_row.append(w)
+          N253.append(temp_row)
+##########
+N254 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0  
+                    temp_row.append(w)
+          N254.append(temp_row)
+##########
+N255 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# Gamma 14
+            for r in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          N255.append(temp_row)
+##########
+N256 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# rho 91,92
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N256.append(temp_row)
+##########
+N257 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# varrho 91,92
+                for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          N257.append(temp_row)
+##########
+N258 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          N258.append(temp_row)
+##########
+N259 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          N259.append(temp_row)
+##########
+N260= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    if l==r and j==i:
+                          w=1  
+                    temp_row.append(w)
+          N260.append(temp_row)    
+##########
+N261= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N261.append(temp_row)    
+##########
+for i in range(len(N253)):
+    concatenated_row = N253[i] +N254[i] + N255[i] + N256[i] + N257[i] + N258[i] + N259[i] + N260[i] + N261[i] 
+    W32.append(concatenated_row)
+####################
+# x 4  
+
+N262 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 5
+                    w = 0 
+                    temp_row.append(w)
+          N262.append(temp_row)
+##########
+N263 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0  
+                    temp_row.append(w)
+          N263.append(temp_row)
+##########
+N264 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# Gamma 14
+            for r in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          N264.append(temp_row)
+##########
+N265 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# rho 91,92
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          N265.append(temp_row)
+##########
+N266 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# varrho 91,92
+                for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          N266.append(temp_row)
+##########
+N267 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          N267.append(temp_row)
+##########
+N268 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          N268.append(temp_row)
+##########
+N269= []
+for j in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0 
+                    temp_row.append(w)
+          N269.append(temp_row)    
+##########
+N270= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if j==i:
+                          w=1 
+                    temp_row.append(w)
+          N270.append(temp_row)    
+##########
+for i in range(len(N262)):
+    concatenated_row = N262[i] +N263[i] + N264[i] + N265[i] + N266[i] + N267[i] + N268[i] + N269[i] + N270[i] 
+    W32.append(concatenated_row)
+####################
+#weight matrix for thirty-two layer/thirty-one hidden layer")
+# print(W32)
+#####################
+# #Bias matrix for thirty-two layer/thirty-one hidden layer
+
+B32 = []
+          
+# bias matrix for upsilon 6
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              temp_row.append(w)
+          B32.append(temp_row)
+
+# bias matrix for upsilon 7
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              temp_row.append(w)
+          B32.append(temp_row)
+          
+# bias matrix for Gamma 15
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = -1
+              temp_row.append(w)
+          B32.append(temp_row)    
+          
+# bias matrix for varsigma 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B32.append(temp_row)
+
+# bias matrix for varsigma 4
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B32.append(temp_row)
+
+# bias matrix for Tau 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B32.append(temp_row)
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B32.append(temp_row)   
+# #####################       
+# print('Printing B32')
+# for i in B32:
+#     print(i)
+##################################
+L32 = []  # varsigma 7, Gamma 15 nodes
+for i in range(len(W32)):
+    temp_row = []
+    L32_i_entry = np.maximum((np.dot(W32[i], L31)+B32[i]), 0)
+    L32.append(L32_i_entry)
+##################################
+# print('Printing varsigma 7, Gamma 15 nodes for thirty-three layer/thirty-two hidden layer')
+# for i in L32:
+#     print(i)
+# #####################
+# To construct weight matrix for thirty-four layer/thirty-three hidden layer is L33=W33*L32+B33
+W33= []
+##########
+# upsilon 6 as identity map 
+
+N271 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 6
+                    w = 0 
+                    if j==l:
+                          w=1  
+                    temp_row.append(w)
+          N271.append(temp_row)
+##########
+N272 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 7
+                    w = 0 
+                    temp_row.append(w)
+          N272.append(temp_row)
+##########
+N273 = []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# Gamma 15
+                    w = 0  
+                    temp_row.append(w)
+          N273.append(temp_row)
+##########
+N274 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N274.append(temp_row)
+##########
+N275 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N275.append(temp_row)
+##########
+N276= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N276.append(temp_row)    
+##########
+N277= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N277.append(temp_row)    
+##########
+for i in range(len(N271)):
+    concatenated_row = N271[i] +N272[i] + N273[i] +N274[i] + N275[i] +N276[i] + N277[i] 
+    W33.append(concatenated_row)
+##########
+# upsilon 8  
+
+N278 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    temp_row.append(w)
+          N278.append(temp_row)
+##########
+N279= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 7
+                    w = 0 
+                    if j==i:
+                          w=1
+                    temp_row.append(w)
+          N279.append(temp_row)
+##########
+N280 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 15
+                    w = 0 
+                    if j==l:
+                          w=-C 
+                    temp_row.append(w)
+          N280.append(temp_row)
+##########
+N281 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N281.append(temp_row)
+##########
+N282 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          N282.append(temp_row)
+##########
+N283= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N283.append(temp_row)    
+##########
+N284= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N284.append(temp_row)    
+##########
+for i in range(len(N278)):
+    concatenated_row = N278[i] +N279[i] + N280[i] +N281[i] + N282[i] +N283[i] + N284[i]
+    W33.append(concatenated_row)
+##########
+# varsigma 3  
+
+N285 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    temp_row.append(w)
+          N285.append(temp_row)
+##########
+N286 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 7
+                    w = 0  
+                    temp_row.append(w)
+          N286.append(temp_row)
+##########
+N287 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 15
+                    w = 0 
+                    temp_row.append(w)
+          N287.append(temp_row)
+##########
+N288 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    if l==i and k==r and j==s:
+                          w=1  
+                    temp_row.append(w)
+          N288.append(temp_row)
+##########
+N289 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          N289.append(temp_row)
+##########
+N290= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N290.append(temp_row)    
+##########
+N291= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N291.append(temp_row)    
+##########
+for i in range(len(N285)):
+    concatenated_row = N285[i] +N286[i] + N287[i] +N288[i] + N289[i] +N290[i]  +N291[i] 
+    W33.append(concatenated_row)
+##########
+# varsigma 4 as identity map 
+
+N292 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    temp_row.append(w)
+          N292.append(temp_row)
+##########
+N293 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 7
+                    w = 0  
+                    temp_row.append(w)
+          N293.append(temp_row)
+##########
+N294 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# Gamma 15
+                    w = 0  
+                    temp_row.append(w)
+          N294.append(temp_row)
+##########
+N295 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          N295.append(temp_row)
+##########
+N296 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0
+                    if l==i and k==r and j==s:
+                          w=1   
+                    temp_row.append(w)
+          N296.append(temp_row)
+##########
+N297= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          N297.append(temp_row)    
+##########
+N298= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N298.append(temp_row)    
+##########
+for i in range(len(N292)):
+    concatenated_row = N292[i] +N293[i] + N294[i] +N295[i] + N296[i] +N297[i] + N298[i] 
+    W33.append(concatenated_row)
+####################
+# Tau 3  
+
+N299 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    temp_row.append(w)
+          N299.append(temp_row)
+##########
+N300 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 7
+                    w = 0  
+                    temp_row.append(w)
+          N300.append(temp_row)
+##########
+N301 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# Gamma 15
+                    w = 0  
+                    temp_row.append(w)
+          N301.append(temp_row)
+##########
+N302 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          N302.append(temp_row)
+##########
+N303 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          N303.append(temp_row)
+##########
+N304= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    if l==r and j==i:
+                          w=1  
+                    temp_row.append(w)
+          N304.append(temp_row)    
+##########
+N305= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          N305.append(temp_row)    
+##########
+for i in range(len(N299)):
+    concatenated_row = N299[i] +N300[i] + N301[i] + N302[i] + N303[i] + N304[i] + N305[i]  
+    W33.append(concatenated_row)
+####################
+# x 4 as identity map 
+
+N306 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    temp_row.append(w)
+          N306.append(temp_row)
+##########
+N307 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 7
+                    w = 0  
+                    temp_row.append(w)
+          N307.append(temp_row)
+##########
+N308 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# Gamma 15
+                    w = 0  
+                    temp_row.append(w)
+          N308.append(temp_row)
+##########
+N309 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          N309.append(temp_row)
+##########
+N310 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          N310.append(temp_row)
+##########
+N311= []
+for j in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0 
+                    temp_row.append(w)
+          N311.append(temp_row)    
+##########
+N312= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if j==i:
+                          w=1 
+                    temp_row.append(w)
+          N312.append(temp_row)    
+##########
+for i in range(len(N306)):
+    concatenated_row = N306[i] +N307[i] + N308[i] + N309[i] + N310[i] + N311[i] + N312[i]
+    W33.append(concatenated_row)
+####################
+#weight matrix for thirty-four layer/thirty-three hidden layer")
+# print(W33)
+#####################
+# #Bias matrix for thirty-four layer/thirty-three hidden layer
+
+B33 = []
+          
+# bias matrix for upsilon 6
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              temp_row.append(w)
+          B33.append(temp_row)
+
+# bias matrix for upsilon 8
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              temp_row.append(w)
+          B33.append(temp_row)
+                       
+# bias matrix for varsigma 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B33.append(temp_row)
+
+# bias matrix for varsigma 4
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B33.append(temp_row)
+
+# bias matrix for Tau 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B33.append(temp_row)
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B33.append(temp_row)   
+# # #####################       
+# print('Printing B33')
+# for i in B33:
+#     print(i)
+##################################
+L33 = []  # varsigma 8 nodes
+for i in range(len(W33)):
+    temp_row = []
+    L33_i_entry = np.maximum((np.dot(W33[i], L32)+B33[i]), 0)
+    L33.append(L33_i_entry)
+##################################
+# print('Printing varsigma 8 nodes for thirty-four layer/thirty-three hidden layer')
+# for i in L33:
+#     print(i)
+# #####################
+# To construct weight matrix for thirty-fifth layer/thirty-fourth hidden layer is L34=W34*L33+B34
+W34= []
+##########
+# upsilon 6 as identity map 
+
+P1 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 6
+                    w = 0 
+                    if j==l:
+                          w=1  
+                    temp_row.append(w)
+          P1.append(temp_row)
+##########
+P2 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 8
+                    w = 0 
+                    temp_row.append(w)
+          P2.append(temp_row)
+##########
+P3 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P3.append(temp_row)
+##########
+P4 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P4.append(temp_row)
+##########
+P5= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P5.append(temp_row)    
+##########
+P6= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P6.append(temp_row)    
+##########
+for i in range(len(P1)):
+    concatenated_row = P1[i] +P2[i] + P3[i] +P4[i] + P5[i] +P6[i] 
+    W34.append(concatenated_row)
+##########
+# upsilon 8 as identity map 
+
+P7 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    temp_row.append(w)
+          P7.append(temp_row)
+##########
+P8= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0 
+                    if j==i:
+                          w=1
+                    temp_row.append(w)
+          P8.append(temp_row)
+##########
+P9 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P9.append(temp_row)
+##########
+P10 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P10.append(temp_row)
+##########
+P11= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P11.append(temp_row)    
+##########
+P12= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P12.append(temp_row)    
+##########
+for i in range(len(P7)):
+    concatenated_row = P7[i] +P8[i] + P9[i] +P10[i] + P11[i] +P12[i] 
+    W34.append(concatenated_row)
+##########
+# beta 61,62 
+
+P13 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    if j==i:
+                          w=1/eps
+                    temp_row.append(w)
+          P13.append(temp_row)
+##########
+P14= []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0 
+                    temp_row.append(w)
+          P14.append(temp_row)
+##########
+P15 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P15.append(temp_row)
+##########
+P16 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P16.append(temp_row)
+##########
+P17= []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P17.append(temp_row)    
+##########
+P18= []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P18.append(temp_row)    
+##########
+for i in range(len(P13)):
+    concatenated_row = P13[i] +P14[i] + P15[i] +P16[i] + P17[i] +P18[i] 
+    W34.append(concatenated_row)
+##########
+# alpha 71,72 
+
+P19 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    temp_row.append(w)
+          P19.append(temp_row)
+##########
+P20= []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0 
+                    if j==i:
+                          w=1/eps
+                    temp_row.append(w)
+          P20.append(temp_row)
+##########
+P21 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P21.append(temp_row)
+##########
+P22 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P22.append(temp_row)
+##########
+P23= []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P23.append(temp_row)    
+##########
+P24= []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P24.append(temp_row)    
+##########
+for i in range(len(P19)):
+    concatenated_row = P19[i] +P20[i] + P21[i] +P22[i] + P23[i] +P24[i] 
+    W34.append(concatenated_row)
+##########
+# beta 71,72 
+
+P25 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    temp_row.append(w)
+          P25.append(temp_row)
+##########
+P26= []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0 
+                    if j==i:
+                          w=-1/eps
+                    temp_row.append(w)
+          P26.append(temp_row)
+##########
+P27 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P27.append(temp_row)
+##########
+P28 = []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P28.append(temp_row)
+##########
+P29= []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P29.append(temp_row)    
+##########
+P30= []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P30.append(temp_row)    
+##########
+for i in range(len(P25)):
+    concatenated_row = P25[i] +P26[i] + P27[i] +P28[i] + P29[i] +P30[i] 
+    W34.append(concatenated_row)
+##########
+# varsigma 3  
+
+P31 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    temp_row.append(w)
+          P31.append(temp_row)
+##########
+P32 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0  
+                    temp_row.append(w)
+          P32.append(temp_row)
+##########
+P33 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    if l==i and k==r and j==s:
+                          w=1  
+                    temp_row.append(w)
+          P33.append(temp_row)
+##########
+P34 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          P34.append(temp_row)
+##########
+P35= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P35.append(temp_row)    
+##########
+P36= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P36.append(temp_row)    
+##########
+for i in range(len(P31)):
+    concatenated_row = P31[i] +P32[i] + P33[i] +P34[i] + P35[i] +P36[i]
+    W34.append(concatenated_row)
+##########
+# varsigma 4 as identity map 
+
+P37 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    temp_row.append(w)
+          P37.append(temp_row)
+##########
+P38 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0  
+                    temp_row.append(w)
+          P38.append(temp_row)
+##########
+P39 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          P39.append(temp_row)
+##########
+P40 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0
+                    if l==i and k==r and j==s:
+                          w=1   
+                    temp_row.append(w)
+          P40.append(temp_row)
+##########
+P41= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P41.append(temp_row)    
+##########
+P42= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P42.append(temp_row)    
+##########
+for i in range(len(P37)):
+    concatenated_row = P37[i] +P38[i] + P39[i] +P40[i] + P41[i] +P42[i] 
+    W34.append(concatenated_row)
+####################
+# Tau 3  
+
+P43 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    temp_row.append(w)
+          P43.append(temp_row)
+##########
+P44 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0  
+                    temp_row.append(w)
+          P44.append(temp_row)
+##########
+P45 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          P45.append(temp_row)
+##########
+P46 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          P46.append(temp_row)
+##########
+P47= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    if l==r and j==i:
+                          w=1  
+                    temp_row.append(w)
+          P47.append(temp_row)    
+##########
+P48= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P48.append(temp_row)    
+##########
+for i in range(len(P43)):
+    concatenated_row = P43[i] +P44[i] + P45[i] + P46[i] + P47[i] + P48[i]  
+    W34.append(concatenated_row)
+####################
+# x 4 as identity map 
+
+P49 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    temp_row.append(w)
+          P49.append(temp_row)
+##########
+P50 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0  
+                    temp_row.append(w)
+          P50.append(temp_row)
+##########
+P51 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          P51.append(temp_row)
+##########
+P52 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          P52.append(temp_row)
+##########
+P53= []
+for j in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0 
+                    temp_row.append(w)
+          P53.append(temp_row)    
+##########
+P54= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if j==i:
+                          w=1 
+                    temp_row.append(w)
+          P54.append(temp_row)    
+##########
+for i in range(len(P49)):
+    concatenated_row = P49[i] +P50[i] + P51[i] + P52[i] + P53[i] + P54[i] 
+    W34.append(concatenated_row)
+####################
+#weight matrix for thirty-fifth layer/thirty-fourth hidden layer")
+# print(W34)
+#####################
+# #Bias matrix for thirty-fifth layer/thirty-fourth hidden layer
+
+B34 = []
+          
+# bias matrix for upsilon 6
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              temp_row.append(w)
+          B34.append(temp_row)
+
+# bias matrix for upsilon 8
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              temp_row.append(w)
+          B34.append(temp_row)
+
+# bias matrix for beta 61,62
+
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              if q==0:
+                  w=(-1/eps)+1
+              else:
+                  w=-1/eps 
+              temp_row.append(w)
+          B34.append(temp_row)
+
+# bias matrix for alpha 71,72
+
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              if q==0:
+                  w=1
+              temp_row.append(w)
+          B34.append(temp_row)   
+
+# bias matrix for beta 71,72
+
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              if q==0:
+                  w=1
+              temp_row.append(w)
+          B34.append(temp_row)
+                     
+# bias matrix for varsigma 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B34.append(temp_row)
+
+# bias matrix for varsigma 4
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B34.append(temp_row)
+
+# bias matrix for Tau 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B34.append(temp_row)
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B34.append(temp_row)   
+# #####################       
+# print('Printing B34')
+# for i in B34:
+#     print(i)
+##################################
+L34 = []  # beta 61,62, alpha 71,72, beta 71,72 nodes
+for i in range(len(W34)):
+    temp_row = []
+    L34_i_entry = np.maximum((np.dot(W34[i], L33)+B34[i]), 0)
+    L34.append(L34_i_entry)
+##################################
+# print('Printing beta 61,62, alpha 71,72, beta 71,72 nodes for thirty-fifth layer/thirty-fourth hidden layer')
+# for i in L34:
+#     print(i)
+# #####################
+# To construct weight matrix for thirty-sixth layer/thirty-fifth hidden layer is L35=W35*L34+B35
+W35= []
+##########
+# upsilon 6 as identity map 
+
+P55 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 6
+                    w = 0 
+                    if j==l:
+                          w=1  
+                    temp_row.append(w)
+          P55.append(temp_row)
+##########
+P56 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 8
+                    w = 0 
+                    temp_row.append(w)
+          P56.append(temp_row)
+##########
+P57 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# beta 61,62
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          P57.append(temp_row)
+##########
+P58 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# alpha 71,72
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          P58.append(temp_row)
+##########
+P59 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# beta 71,72
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          P59.append(temp_row)
+##########
+P60 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P60.append(temp_row)
+##########
+P61 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P61.append(temp_row)
+##########
+P62= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P62.append(temp_row)    
+##########
+P63= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P63.append(temp_row)    
+##########
+for i in range(len(P55)):
+    concatenated_row = P55[i] +P56[i] + P57[i] +P58[i] + P59[i] +P60[i] +P61[i] + P62[i] +P63[i]
+    W35.append(concatenated_row)
+##########
+
+# upsilon 8 as identity map 
+P64 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    temp_row.append(w)
+          P64.append(temp_row)
+##########
+P65= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0 
+                    if j==i:
+                          w=1
+                    temp_row.append(w)
+          P65.append(temp_row)
+##########
+P66 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# beta 61,62
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          P66.append(temp_row)
+##########
+P67 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# alpha 71,72
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          P67.append(temp_row)
+##########
+P68 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# beta 71,72
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          P68.append(temp_row)
+##########
+P69 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P69.append(temp_row)
+##########
+P70 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P70.append(temp_row)
+##########
+P71= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P71.append(temp_row)    
+##########
+P72= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P72.append(temp_row)    
+##########
+for i in range(len(P64)):
+    concatenated_row = P64[i] +P65[i] + P66[i] +P67[i] + P68[i] +P69[i] +P70[i] + P71[i] +P72[i]
+    W35.append(concatenated_row)
+##########
+# Gamma 16 
+P73 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    temp_row.append(w)
+          P73.append(temp_row)
+##########
+P74= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0 
+                    temp_row.append(w)
+          P74.append(temp_row)
+##########
+P75 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# beta 61,62
+                for q in range(2):
+                    w = 0 
+                    if j==l:
+                        if q==0:
+                          w=1 
+                        else:
+                            w=-1
+                    temp_row.append(w)
+          P75.append(temp_row)
+##########
+P76 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# alpha 71,72
+                for q in range(2):
+                    w = 0 
+                    if j==l:
+                        if q==0:
+                          w=1 
+                        else:
+                            w=-1 
+                    temp_row.append(w)
+          P76.append(temp_row)
+##########
+P77 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# beta 71,72
+                for q in range(2):
+                    w = 0 
+                    if j==l:
+                        if q==0:
+                          w=1 
+                        else:
+                            w=-1 
+                    temp_row.append(w)
+          P77.append(temp_row)
+##########
+P78 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P78.append(temp_row)
+##########
+P79 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P79.append(temp_row)
+##########
+P80= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P80.append(temp_row)    
+##########
+P81= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P81.append(temp_row)    
+##########
+for i in range(len(P73)):
+    concatenated_row = P73[i] +P74[i] + P75[i] +P76[i] + P77[i] +P78[i] +P79[i] + P80[i] +P81[i]
+    W35.append(concatenated_row)
+##########
+# varsigma 3  
+
+P82 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    temp_row.append(w)
+          P82.append(temp_row)
+##########
+P83 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0  
+                    temp_row.append(w)
+          P83.append(temp_row)
+##########
+P84 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for l in range(1, d+1):# beta 61,62
+                for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          P84.append(temp_row)
+##########
+P85 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for l in range(1, d+1):# alpha 71,72
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          P85.append(temp_row)
+##########
+P86 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for l in range(1, d+1):# beta 71,72
+                for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          P86.append(temp_row)
+##########
+P87 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    if l==i and k==r and j==s:
+                          w=1  
+                    temp_row.append(w)
+          P87.append(temp_row)
+##########
+P88 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          P88.append(temp_row)
+##########
+P89= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P89.append(temp_row)    
+##########
+P90= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P90.append(temp_row)    
+##########
+for i in range(len(P82)):
+    concatenated_row = P82[i] +P83[i] + P84[i] +P85[i] + P86[i] +P87[i]+P88[i] + P89[i] +P90[i]
+    W35.append(concatenated_row)
+##########
+# varsigma 4  
+
+P91 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    temp_row.append(w)
+          P91.append(temp_row)
+##########
+P92 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0  
+                    temp_row.append(w)
+          P92.append(temp_row)
+##########
+P93 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for l in range(1, d+1):# beta 61,62
+                for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          P93.append(temp_row)
+##########
+P94 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for l in range(1, d+1):# alpha 71,72
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          P94.append(temp_row)
+##########
+P95 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for l in range(1, d+1):# beta 71,72
+                for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          P95.append(temp_row)
+##########
+P96 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P96.append(temp_row)
+##########
+P97 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    if l==i and k==r and j==s:
+                          w=1 
+                    temp_row.append(w)
+          P97.append(temp_row)
+##########
+P98= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P98.append(temp_row)    
+##########
+P99= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P99.append(temp_row)    
+##########
+for i in range(len(P91)):
+    concatenated_row = P91[i] +P92[i] + P93[i] +P94[i] + P95[i] +P96[i]+P97[i] + P98[i] +P99[i]
+    W35.append(concatenated_row)
+####################
+# Tau 3  
+
+P100= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    temp_row.append(w)
+          P100.append(temp_row)
+##########
+P101 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0  
+                    temp_row.append(w)
+          P101.append(temp_row)
+##########
+P102 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# beta 61,62
+                for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          P102.append(temp_row)
+##########
+P103 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# alpha 71,72
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          P103.append(temp_row)
+##########
+P104 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# beta 71,72
+                for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          P104.append(temp_row)
+##########
+P105 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P105.append(temp_row)
+##########
+P106 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P106.append(temp_row)
+##########
+P107= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    if l==r and j==i :
+                          w=1
+                    temp_row.append(w)
+          P107.append(temp_row)    
+##########
+P108= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P108.append(temp_row)    
+##########
+for i in range(len(P100)):
+    concatenated_row = P100[i] +P101[i] + P102[i] +P103[i] + P104[i] +P105[i]+P106[i] + P107[i] +P108[i]
+    W35.append(concatenated_row)
+####################
+# x 4  
+
+P109= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    temp_row.append(w)
+          P109.append(temp_row)
+##########
+P110 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0  
+                    temp_row.append(w)
+          P110.append(temp_row)
+##########
+P111 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# beta 61,62
+                for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          P111.append(temp_row)
+##########
+P112 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# alpha 71,72
+                for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          P112.append(temp_row)
+##########
+P113 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# beta 71,72
+                for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          P113.append(temp_row)
+##########
+P114 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P114.append(temp_row)
+##########
+P115 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P115.append(temp_row)
+##########
+P116= []
+for j in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P116.append(temp_row)    
+##########
+P117= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if j==i :
+                          w=1
+                    temp_row.append(w)
+          P117.append(temp_row)    
+##########
+for i in range(len(P109)):
+    concatenated_row = P109[i] +P110[i] + P111[i] +P112[i] + P113[i] +P114[i]+P115[i] + P116[i] +P117[i]
+    W35.append(concatenated_row)
+####################
+#weight matrix for thirty-sixth layer/thirty-fifth hidden layer")
+# print(W35)
+#####################
+# #Bias matrix for thirty-sixth layer/thirty-fifth hidden layer
+
+B35 = []
+          
+# bias matrix for upsilon 6
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              temp_row.append(w)
+          B35.append(temp_row)
+
+# bias matrix for upsilon 8
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              temp_row.append(w)
+          B35.append(temp_row)
+
+# bias matrix for Gamma 16
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = -2
+              temp_row.append(w)
+          B35.append(temp_row)
+                     
+# bias matrix for varsigma 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B35.append(temp_row)
+
+# bias matrix for varsigma 4
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B35.append(temp_row)
+
+# bias matrix for Tau 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B35.append(temp_row)
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B35.append(temp_row)   
+# #####################       
+# print('Printing B35')
+# for i in B35:
+#     print(i)
+##################################
+L35 = []  # Gamma 16 nodes
+for i in range(len(W35)):
+    temp_row = []
+    L35_i_entry = np.maximum((np.dot(W35[i], L34)+B35[i]), 0)
+    L35.append(L35_i_entry)
+##################################
+# print('Printing Gamma 16 nodes for thirty-sixth layer/thirty-fifth hidden layer')
+# for i in L35:
+#     print(i)
+# #####################
+# To construct weight matrix for thirty-seventh layer/thirty-sixth hidden layer is L36=W36*L35+B36
+W36= []
+
+# upsilon 8 as identity map 
+P118 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    temp_row.append(w)
+          P118.append(temp_row)
+##########
+P119= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0 
+                    if j==i:
+                          w=1
+                    temp_row.append(w)
+          P119.append(temp_row)
+##########
+P120 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 16
+                    w = 0  
+                    temp_row.append(w)
+          P120.append(temp_row)
+##########
+P121 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P121.append(temp_row)
+##########
+P122 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P122.append(temp_row)
+##########
+P123= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P123.append(temp_row)    
+##########
+P124= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P124.append(temp_row)    
+##########
+for i in range(len(P118)):
+    concatenated_row = P118[i] +P119[i] + P120[i] +P121[i] + P122[i] +P123[i] +P124[i] 
+    W36.append(concatenated_row)
+##########
+# Gamma 17 
+P125 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    if j==i:
+                        w=1
+                    temp_row.append(w)
+          P125.append(temp_row)
+##########
+P126= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0 
+                    temp_row.append(w)
+          P126.append(temp_row)
+##########
+P127 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 16
+                    w = 0 
+                    if j==l:
+                        w=C
+                    temp_row.append(w)
+          P127.append(temp_row)
+##########
+P128 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P128.append(temp_row)
+##########
+P129 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P129.append(temp_row)
+##########
+P130= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P130.append(temp_row)    
+##########
+P131= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P131.append(temp_row)    
+##########
+for i in range(len(P125)):
+    concatenated_row = P125[i] +P126[i] + P127[i] +P128[i] +P129[i]+ P130[i] +P131[i]  
+    W36.append(concatenated_row)
+##########
+# Gamma 18 
+P132 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    if j==i:
+                        w=1
+                    temp_row.append(w)
+          P132.append(temp_row)
+##########
+P133= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0 
+                    temp_row.append(w)
+          P133.append(temp_row)
+##########
+P134 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 16
+                    w = 0 
+                    if j==l:
+                        w=-C
+                    temp_row.append(w)
+          P134.append(temp_row)
+##########
+P135 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P135.append(temp_row)
+##########
+P136 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P136.append(temp_row)
+##########
+P137= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P137.append(temp_row)    
+##########
+P138= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P138.append(temp_row)    
+##########
+for i in range(len(P132)):
+    concatenated_row = P132[i] +P133[i] + P134[i] +P135[i] + P136[i] +P137[i] +P138[i] 
+    W36.append(concatenated_row)
+##########
+# varsigma 3  
+
+P139 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    temp_row.append(w)
+          P139.append(temp_row)
+##########
+P140 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0  
+                    temp_row.append(w)
+          P140.append(temp_row)
+##########
+P141 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 16
+                    w = 0
+                    temp_row.append(w)
+          P141.append(temp_row)
+##########
+P142 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    if l==i and k==r and j==s:
+                          w=1  
+                    temp_row.append(w)
+          P142.append(temp_row)
+##########
+P143 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          P143.append(temp_row)
+##########
+P144= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P144.append(temp_row)    
+##########
+P145= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P145.append(temp_row)    
+##########
+for i in range(len(P139)):
+    concatenated_row = P139[i] +P140[i] + P141[i] +P142[i] + P143[i] +P144[i]+P145[i] 
+    W36.append(concatenated_row)
+##########
+# varsigma 4  
+
+P146 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    temp_row.append(w)
+          P146.append(temp_row)
+##########
+P147 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0  
+                    temp_row.append(w)
+          P147.append(temp_row)
+##########
+P148 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 16
+                    w = 0
+                    temp_row.append(w)
+          P148.append(temp_row)
+##########
+P149 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P149.append(temp_row)
+##########
+P150 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    if l==i and k==r and j==s:
+                          w=1 
+                    temp_row.append(w)
+          P150.append(temp_row)
+##########
+P151= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P151.append(temp_row)    
+##########
+P152= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P152.append(temp_row)    
+##########
+for i in range(len(P146)):
+    concatenated_row = P146[i] +P147[i] + P148[i] +P149[i] + P150[i] +P151[i]+P152[i] 
+    W36.append(concatenated_row)
+####################
+# Tau 3  
+
+P153= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    temp_row.append(w)
+          P153.append(temp_row)
+##########
+P154 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0  
+                    temp_row.append(w)
+          P154.append(temp_row)
+##########
+P155 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 16
+                    w = 0
+                    temp_row.append(w)
+          P155.append(temp_row)
+##########
+P156 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P156.append(temp_row)
+##########
+P157 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P157.append(temp_row)
+##########
+P158= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    if l==r and j==i :
+                          w=1
+                    temp_row.append(w)
+          P158.append(temp_row)    
+##########
+P159= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P159.append(temp_row)    
+##########
+for i in range(len(P153)):
+    concatenated_row = P153[i] +P154[i] + P155[i] +P156[i] + P157[i] +P158[i] +P159[i]
+    W36.append(concatenated_row)
+####################
+# x 4  
+
+P160= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 6
+                    w = 0 
+                    temp_row.append(w)
+          P160.append(temp_row)
+##########
+P161 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0  
+                    temp_row.append(w)
+          P161.append(temp_row)
+##########
+P162 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 16
+                    w = 0
+                    temp_row.append(w)
+          P162.append(temp_row)
+##########
+P163 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for j in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P163.append(temp_row)
+##########
+P164 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for j in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P164.append(temp_row)
+##########
+P165= []
+for j in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P165.append(temp_row)    
+##########
+P166= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if j==i :
+                          w=1
+                    temp_row.append(w)
+          P166.append(temp_row)    
+##########
+for i in range(len(P160)):
+    concatenated_row = P160[i] +P161[i] + P162[i] +P163[i] + P164[i] +P165[i]+P166[i]
+    W36.append(concatenated_row)
+####################
+#weight matrix for thirty-seventh layer/thirty-sixth hidden layer")
+# print(W36)
+#####################
+# #Bias matrix for thirty-seventh layer/thirty-sixth hidden layer
+
+B36 = []
+
+# bias matrix for upsilon 8
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              temp_row.append(w)
+          B36.append(temp_row)
+
+# bias matrix for Gamma 17
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = -C+1
+              temp_row.append(w)
+          B36.append(temp_row)
+
+# bias matrix for Gamma 18
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B36.append(temp_row)
+                     
+# bias matrix for varsigma 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B36.append(temp_row)
+
+# bias matrix for varsigma 4
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B36.append(temp_row)
+
+# bias matrix for Tau 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B36.append(temp_row)
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B36.append(temp_row)   
+# #####################       
+# print('Printing B36')
+# for i in B36:
+#     print(i)
+##################################
+L36 = []  # Gamma 17, Gamma 18 nodes
+for i in range(len(W36)):
+    temp_row = []
+    L36_i_entry = np.maximum((np.dot(W36[i], L35)+B36[i]), 0)
+    L36.append(L36_i_entry)
+##################################
+# print('Printing Gamma 17, Gamma 18 nodes for thirty-seventh layer/thirty-sixth hidden layer')
+# for i in L36:
+#     print(i)
+# #####################
+# To construct weight matrix for thirty-eighth layer/thirty-seventh hidden layer is L37=W37*L36+B37
+W37= []
+
+# upsilon 8 as identity map 
+P167= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0 
+                    if j==i:
+                          w=1
+                    temp_row.append(w)
+          P167.append(temp_row)
+##########
+P168 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 17
+                    w = 0  
+                    temp_row.append(w)
+          P168.append(temp_row)
+##########
+P169 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 18
+                    w = 0  
+                    temp_row.append(w)
+          P169.append(temp_row)
+##########
+P170 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P170.append(temp_row)
+##########
+P171 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P171.append(temp_row)
+##########
+P172= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P172.append(temp_row)    
+##########
+P173= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P173.append(temp_row)    
+##########
+for i in range(len(P167)):
+    concatenated_row = P167[i] +P168[i] + P169[i] +P170[i] + P171[i] +P172[i] +P173[i] 
+    W37.append(concatenated_row)
+##########
+# upsilon 9 
+P174 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0 
+                    temp_row.append(w)
+          P174.append(temp_row)
+##########
+P175 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 17
+                    w = 0 
+                    if j==l:
+                        w=1
+                    temp_row.append(w)
+          P175.append(temp_row)
+##########
+P176 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 18
+                    w = 0 
+                    if j==l:
+                        w=1
+                    temp_row.append(w)
+          P176.append(temp_row)
+##########
+P177 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P177.append(temp_row)
+##########
+P178 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P178.append(temp_row)
+##########
+P179= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P179.append(temp_row)    
+##########
+P180= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P180.append(temp_row)    
+##########
+for i in range(len(P174)):
+    concatenated_row = P174[i] +P175[i] + P176[i] +P177[i] +P178[i]+ P179[i] +P180[i]  
+    W37.append(concatenated_row)
+##########
+# varsigma 3  
+P181= []# varsigma 3 nodes
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0 
+                    temp_row.append(w)
+          P181.append(temp_row)
+##########
+P182 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# Gamma 17
+                    w = 0  
+                    temp_row.append(w)
+          P182.append(temp_row)
+##########
+P183 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 18
+                    w = 0
+                    temp_row.append(w)
+          P183.append(temp_row)
+##########
+P184 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    if l==i and k==r and j==s:
+                          w=1  
+                    temp_row.append(w)
+          P184.append(temp_row)
+##########
+P185 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for j in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          P185.append(temp_row)
+##########
+P186= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P186.append(temp_row)    
+##########
+P187= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P187.append(temp_row)    
+##########
+for i in range(len(P181)):
+    concatenated_row = P181[i] +P182[i] + P183[i] +P184[i] + P185[i] +P186[i]+P187[i] 
+    W37.append(concatenated_row)
+##########
+# varsigma 4  
+
+P188 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0 
+                    temp_row.append(w)
+          P188.append(temp_row)
+##########
+P189 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# Gamma 17
+                    w = 0  
+                    temp_row.append(w)
+          P189.append(temp_row)
+##########
+P190 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 18
+                    w = 0
+                    temp_row.append(w)
+          P190.append(temp_row)
+##########
+P191 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P191.append(temp_row)
+##########
+P192 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    if l==i and k==r and j==s:
+                          w=1 
+                    temp_row.append(w)
+          P192.append(temp_row)
+##########
+P193= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P193.append(temp_row)    
+##########
+P194= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P194.append(temp_row)    
+##########
+for i in range(len(P188)):
+    concatenated_row = P188[i] +P189[i] + P190[i] +P191[i] + P192[i] +P193[i]+P194[i] 
+    W37.append(concatenated_row)
+####################
+# Tau 3  
+
+P195= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0 
+                    temp_row.append(w)
+          P195.append(temp_row)
+##########
+P196 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# Gamma 17
+                    w = 0  
+                    temp_row.append(w)
+          P196.append(temp_row)
+##########
+P197 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 18
+                    w = 0
+                    temp_row.append(w)
+          P197.append(temp_row)
+##########
+P198 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P198.append(temp_row)
+##########
+P199 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P199.append(temp_row)
+##########
+P200= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    if l==r and j==i :
+                          w=1
+                    temp_row.append(w)
+          P200.append(temp_row)    
+##########
+P201= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          P201.append(temp_row)    
+##########
+for i in range(len(P195)):
+    concatenated_row = P195[i] +P196[i] + P197[i] +P198[i] + P199[i] +P200[i] +P201[i]
+    W37.append(concatenated_row)
+####################
+# x 4  
+
+P202= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0 
+                    temp_row.append(w)
+          P202.append(temp_row)
+##########
+P203 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# Gamma 17
+                    w = 0  
+                    temp_row.append(w)
+          P203.append(temp_row)
+##########
+P204 = []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Gamma 18
+                    w = 0
+                    temp_row.append(w)
+          P204.append(temp_row)
+##########
+P205 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P205.append(temp_row)
+##########
+P206 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          P206.append(temp_row)
+##########
+P207= []
+for j in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          P207.append(temp_row)    
+##########
+P208= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if j==i :
+                          w=1
+                    temp_row.append(w)
+          P208.append(temp_row)    
+##########
+for i in range(len(P202)):
+    concatenated_row = P202[i] +P203[i] + P204[i] +P205[i] + P206[i] +P207[i]+P208[i]
+    W37.append(concatenated_row)
+####################
+#weight matrix for thirty-seventh layer/thirty-sixth hidden layer")
+# print(W37)
+#####################
+# #Bias matrix for thirty-seventh layer/thirty-sixth hidden layer
+
+B37 = []
+
+# bias matrix for upsilon 8
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              temp_row.append(w)
+          B37.append(temp_row)
+
+# bias matrix for upsilon 9
+
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B37.append(temp_row)
+                     
+# bias matrix for varsigma 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B37.append(temp_row)
+
+# bias matrix for varsigma 4
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B37.append(temp_row)
+
+# bias matrix for Tau 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B37.append(temp_row)
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B37.append(temp_row)   
+# #####################       
+# print('Printing B37')
+# for i in B37:
+#     print(i)
+##################################
+L37 = []  # Gamma 9 nodes
+for i in range(len(W37)):
+    temp_row = []
+    L37_i_entry = np.maximum((np.dot(W37[i], L36)+B37[i]), 0)
+    L37.append(L37_i_entry)
+##################################
+# print('Printing Gamma 9 nodes for thirty-eighth layer/thirty-seventh hidden layer')
+# for i in L37:
+#     print(i)
+# #####################
+# To construct weight matrix for thirty-ninth layer/thirty-eighth hidden layer is L38=W38*L37+B38
+W38= []
+
+# mu 71,72 nodes 
+Q1= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0 
+                    if j==i:
+                          w=-1/eps
+                    temp_row.append(w)
+          Q1.append(temp_row)
+##########
+Q2= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 9
+                    w = 0  
+                    temp_row.append(w)
+          Q2.append(temp_row)
+##########
+Q3= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q3.append(temp_row)
+##########
+Q4= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q4.append(temp_row)
+##########
+Q5= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          Q5.append(temp_row)    
+##########
+Q6= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          Q6.append(temp_row)    
+##########
+for i in range(len(Q1)):
+    concatenated_row = Q1[i] +Q2[i] + Q3[i] +Q4[i] + Q5[i] +Q6[i]  
+    W38.append(concatenated_row)
+##########
+# lambda 71,72 nodes 
+Q7= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0 
+                    if j==i:
+                          w=1/eps
+                    temp_row.append(w)
+          Q7.append(temp_row)
+##########
+Q8= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 9
+                    w = 0  
+                    temp_row.append(w)
+          Q8.append(temp_row)
+##########
+Q9= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q9.append(temp_row)
+##########
+Q10= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q10.append(temp_row)
+##########
+Q11= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          Q11.append(temp_row)    
+##########
+Q12= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          Q12.append(temp_row)    
+##########
+for i in range(len(Q7)):
+    concatenated_row = Q7[i] +Q8[i] + Q9[i] +Q10[i] + Q11[i] +Q12[i]  
+    W38.append(concatenated_row)
+##########
+# mu 81,82 nodes 
+Q13= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0 
+                    temp_row.append(w)
+          Q13.append(temp_row)
+##########
+Q14= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 9
+                    w = 0 
+                    if j==l:
+                          w=-1/eps 
+                    temp_row.append(w)
+          Q14.append(temp_row)
+##########
+Q15= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q15.append(temp_row)
+##########
+Q16= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q16.append(temp_row)
+##########
+Q17= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          Q17.append(temp_row)    
+##########
+Q18= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          Q18.append(temp_row)    
+##########
+for i in range(len(Q13)):
+    concatenated_row = Q13[i] +Q14[i] + Q15[i] +Q16[i] + Q17[i] +Q18[i]  
+    W38.append(concatenated_row)
+##########
+# lambda 81,82 nodes 
+Q19= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0 
+                    temp_row.append(w)
+          Q19.append(temp_row)
+##########
+Q20= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# upsilon 9
+                    w = 0 
+                    if j==l:
+                          w=1/eps 
+                    temp_row.append(w)
+          Q20.append(temp_row)
+##########
+Q21= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q21.append(temp_row)
+##########
+Q22= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q22.append(temp_row)
+##########
+Q23= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          Q23.append(temp_row)    
+##########
+Q24= []
+for j in range(1, d+1):
+  for k in range(0, n+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          Q24.append(temp_row)    
+##########
+for i in range(len(Q19)):
+    concatenated_row = Q19[i] +Q20[i] + Q21[i] +Q22[i] + Q23[i] +Q24[i]  
+    W38.append(concatenated_row)
+##########
+# varsigma 3  
+Q25= []# varsigma 3 nodes
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0 
+                    temp_row.append(w)
+          Q25.append(temp_row)
+##########
+Q26 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 9
+                    w = 0  
+                    temp_row.append(w)
+          Q26.append(temp_row)
+##########
+Q27 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    if l==i and k==r and j==s:
+                          w=1  
+                    temp_row.append(w)
+          Q27.append(temp_row)
+##########
+Q28 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          Q28.append(temp_row)
+##########
+Q29= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          Q29.append(temp_row)    
+##########
+Q30= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          Q30.append(temp_row)    
+##########
+for i in range(len(Q25)):
+    concatenated_row = Q25[i] + Q26[i] +Q27[i] + Q28[i] +Q29[i]+Q30[i] 
+    W38.append(concatenated_row)
+##########
+# varsigma 4  
+
+Q31 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0 
+                    temp_row.append(w)
+          Q31.append(temp_row)
+##########
+Q32 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 9
+                    w = 0  
+                    temp_row.append(w)
+          Q32.append(temp_row)
+##########
+Q33 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q33.append(temp_row)
+##########
+Q34 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    if l==i and k==r and j==s:
+                          w=1 
+                    temp_row.append(w)
+          Q34.append(temp_row)
+##########
+Q35= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          Q35.append(temp_row)    
+##########
+Q36= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          Q36.append(temp_row)    
+##########
+for i in range(len(Q31)):
+    concatenated_row = Q31[i] + Q32[i] +Q33[i] + Q34[i] +Q35[i]+Q36[i] 
+    W38.append(concatenated_row)
+####################
+# Tau 3  
+
+Q37= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0 
+                    temp_row.append(w)
+          Q37.append(temp_row)
+##########
+Q38 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 9
+                    w = 0  
+                    temp_row.append(w)
+          Q38.append(temp_row)
+##########
+Q39 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q39.append(temp_row)
+##########
+Q40 = []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q40.append(temp_row)
+##########
+Q41= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    if l==r and j==i :
+                          w=1
+                    temp_row.append(w)
+          Q41.append(temp_row)    
+##########
+Q42= []
+for l in range(0, 2*n+1):
+      for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          Q42.append(temp_row)    
+##########
+for i in range(len(Q37)):
+    concatenated_row = Q37[i] + Q38[i] +Q39[i] + Q40[i] +Q41[i] +Q42[i]
+    W38.append(concatenated_row)
+####################
+# x 4  
+
+Q43= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 8
+                    w = 0 
+                    temp_row.append(w)
+          Q43.append(temp_row)
+##########
+Q44 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# upsilon 9
+                    w = 0  
+                    temp_row.append(w)
+          Q44.append(temp_row)
+##########
+Q45 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q45.append(temp_row)
+##########
+Q46 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q46.append(temp_row)
+##########
+Q47= []
+for j in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          Q47.append(temp_row)    
+##########
+Q48= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if j==i :
+                          w=1
+                    temp_row.append(w)
+          Q48.append(temp_row)    
+##########
+for i in range(len(Q43)):
+    concatenated_row = Q43[i] + Q44[i] +Q45[i] + Q46[i] +Q47[i]+Q48[i]
+    W38.append(concatenated_row)
+####################
+#weight matrix for thirty-ninth layer/thirty-eighth hidden layer")
+# print(W38)
+#####################
+# #Bias matrix for thirty-ninth layer/thirty-eighth hidden layer
+
+B38 = []
+
+# bias matrix for mu 71,72 nodes
+
+for j in range(1, d+1):
+  for k in range(0, n+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              if q==0:
+                  w=(k/eps)+1
+              else:
+                   w=k/eps
+              temp_row.append(w)
+          B38.append(temp_row)
+
+# bias matrix for lambda 71,72 nodes
+
+for j in range(1, d+1):
+  for k in range(0, n+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              if q==0:
+                  w=(-k/eps)+1
+              else:
+                   w=-k/eps
+              temp_row.append(w)
+          B38.append(temp_row)
+
+# bias matrix for mu 81,82 nodes
+
+for j in range(1, d+1):
+  for k in range(0, n+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              if q==0:
+                  w=(k/eps)+1
+              else:
+                   w=k/eps
+              temp_row.append(w)
+          B38.append(temp_row)
+
+# bias matrix for lambda 81,82 nodes
+
+for j in range(1, d+1):
+  for k in range(0, n+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0 
+              if q==0:
+                  w=(-k/eps)+1
+              else:
+                   w=-k/eps
+              temp_row.append(w)
+          B38.append(temp_row)
+                     
+# bias matrix for varsigma 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B38.append(temp_row)
+
+# bias matrix for varsigma 4
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B38.append(temp_row)
+
+# bias matrix for Tau 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B38.append(temp_row)
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B38.append(temp_row)   
+# #####################       
+# print('Printing B38')
+# for i in B38:
+#     print(i)
+##################################
+L38 = []  # mu 71,72, lambda 71,72, mu 81,82, lambda 81,82 nodes
+for i in range(len(W38)):
+    temp_row = []
+    L38_i_entry = np.maximum((np.dot(W38[i], L37)+B38[i]), 0)
+    L38.append(L38_i_entry)
+##################################
+# print('Printing mu 71,72, lambda 71,72, mu 81,82, lambda 81,82 nodes for thirty-ninth layer/thirty-eighth hidden layer')
+# for i in L38:
+#     print(i)
+# #####################
+# To construct weight matrix for fourtieth layer/thirty-ninth hidden layer is L39=W39*L38+B39
+W39= []
+
+# Gamma 19 nodes 
+Q49= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for s in range(1, d+1):# mu 71,72
+            for r in range(0, n+1):
+              for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          Q49.append(temp_row)
+##########
+Q50= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for s in range(1, d+1):# lambda 71,72
+            for r in range(0, n+1):
+              for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          Q50.append(temp_row)
+##########
+Q51= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for r in range(1, d+1):# mu 81,82
+            for s in range(0, n+1):
+              for q in range(2):
+                    w = 0 
+                    if k==s and j==r:
+                        if q==0:
+                          w=1
+                        else:
+                             w=-1
+                    temp_row.append(w)
+          Q51.append(temp_row)
+##########
+Q52= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for r in range(1, d+1):# lambda 81,82
+            for s in range(0, n+1):
+              for q in range(2):
+                    w = 0 
+                    if k==s and j==r:
+                        if q==0:
+                          w=1
+                        else:
+                             w=-1 
+                    temp_row.append(w)
+          Q52.append(temp_row)
+##########
+Q53= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q53.append(temp_row)
+##########
+Q54= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q54.append(temp_row)
+##########
+Q55= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for s in range(1, d+1):
+                    w = 0
+                    if l==i and j==s:
+                            w=1
+                    temp_row.append(w)
+          Q55.append(temp_row)    
+##########
+Q56= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          Q56.append(temp_row)    
+##########
+for i in range(len(Q49)):
+    concatenated_row = Q49[i] +Q50[i]+ Q51[i]+Q52[i] + Q53[i] +Q54[i] + Q55[i] +Q56[i] 
+    W39.append(concatenated_row)
+##########
+# Gamma 20 nodes 
+Q57= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for r in range(1, d+1):# mu 71,72
+            for s in range(0, n+1):
+              for q in range(2):
+                    w = 0 
+                    if k==s and j==r:
+                        if q==0:
+                          w=1
+                        else:
+                             w=-1
+                    temp_row.append(w)
+          Q57.append(temp_row)
+##########
+Q58= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for r in range(1, d+1):# lambda 71,72
+            for s in range(0, n+1):
+              for q in range(2):
+                    w = 0  
+                    if k==s and j==r:
+                        if q==0:
+                          w=1
+                        else:
+                             w=-1
+                    temp_row.append(w)
+          Q58.append(temp_row)
+##########
+Q59= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for s in range(1, d+1):# mu 81,82
+            for r in range(0, n+1):
+              for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          Q59.append(temp_row)
+##########
+Q60= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for s in range(1, d+1):# lambda 81,82
+            for r in range(0, n+1):
+              for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          Q60.append(temp_row)
+##########
+Q61= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q61.append(temp_row)
+##########
+Q62= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q62.append(temp_row)
+##########
+Q63= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Tau 3
+              for s in range(1, d+1):
+                    w = 0
+                    if l==i and j==s:
+                            w=1
+                    temp_row.append(w)
+          Q63.append(temp_row)    
+##########
+Q64= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          Q64.append(temp_row)    
+##########
+for i in range(len(Q57)):
+    concatenated_row = Q57[i] +Q58[i]+ Q59[i]+Q60[i] + Q61[i] +Q62[i] + Q63[i] +Q64[i] 
+    W39.append(concatenated_row)
+##########
+# varsigma 3  
+Q65= []# varsigma 3 nodes
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for s in range(1, d+1):# mu 71,72
+            for r in range(0, n+1):
+              for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          Q65.append(temp_row)
+##########
+Q66 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for s in range(1, d+1):# lambda 71,72
+            for r in range(0, n+1):
+              for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          Q66.append(temp_row)
+##########
+Q67= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(1, d+1):# mu 81,82
+            for s in range(0, n+1):
+              for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          Q67.append(temp_row)
+##########
+Q68 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(1, d+1):# lambda 81,82
+            for s in range(0, n+1):
+              for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          Q68.append(temp_row)
+##########
+Q69 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    if l==i and k==r and j==s:
+                          w=1  
+                    temp_row.append(w)
+          Q69.append(temp_row)
+##########
+Q70 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          Q70.append(temp_row)
+##########
+Q71= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          Q71.append(temp_row)    
+##########
+Q72= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          Q72.append(temp_row)    
+##########
+for i in range(len(Q65)):
+    concatenated_row = Q65[i] + Q66[i] +Q67[i] + Q68[i] +Q69[i]+Q70[i] +Q71[i]+Q72[i]
+    W39.append(concatenated_row)
+##########
+# varsigma 4  
+Q73= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(1, d+1):# mu 71,72
+            for s in range(0, n+1):
+              for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          Q73.append(temp_row)
+##########
+Q74 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(1, d+1):# lambda 71,72
+            for s in range(0, n+1):
+              for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          Q74.append(temp_row)
+##########
+Q75= []# varsigma 3 nodes
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(1, d+1):# mu 81,82
+            for s in range(0, n+1):
+              for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          Q75.append(temp_row)
+##########
+Q76 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(1, d+1):# lambda 81,82
+            for s in range(0, n+1):
+              for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          Q76.append(temp_row)
+##########
+Q77 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          Q77.append(temp_row)
+##########
+Q78 = []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    if l==i and k==r and j==s:
+                          w=1
+                    temp_row.append(w)
+          Q78.append(temp_row)
+##########
+Q79= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          Q79.append(temp_row)    
+##########
+Q80= []
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          Q80.append(temp_row)    
+##########
+for i in range(len(Q73)):
+    concatenated_row = Q73[i] + Q74[i] +Q75[i] + Q76[i] +Q77[i]+Q78[i] +Q79[i]+Q80[i]
+    W39.append(concatenated_row)
+##########
+# x 4  
+
+Q81= []
+for j in range(1, d+1):
+          temp_row = []
+          for r in range(1, d+1):# mu 71,72
+            for s in range(0, n+1):
+              for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          Q81.append(temp_row)
+##########
+Q82 = []
+for j in range(1, d+1):
+          temp_row = []
+          for r in range(1, d+1):# lambda 71,72
+            for s in range(0, n+1):
+              for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          Q82.append(temp_row)
+##########
+Q83= []
+for j in range(1, d+1):
+          temp_row = []
+          for r in range(1, d+1):# mu 81,82
+            for s in range(0, n+1):
+              for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          Q83.append(temp_row)
+##########
+Q84 = []
+for j in range(1, d+1):
+          temp_row = []
+          for r in range(1, d+1):# lambda 81,82
+            for s in range(0, n+1):
+              for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          Q84.append(temp_row)
+##########
+Q85 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q85.append(temp_row)
+##########
+Q86 = []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q86.append(temp_row)
+##########
+Q87= []
+for j in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Tau 3
+              for i in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          Q87.append(temp_row)    
+##########
+Q88= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if j==i :
+                          w=1
+                    temp_row.append(w)
+          Q88.append(temp_row)    
+##########
+for i in range(len(Q81)):
+    concatenated_row = Q81[i] + Q82[i] +Q83[i] + Q84[i] +Q85[i]+Q86[i] +Q87[i]+Q88[i]
+    W39.append(concatenated_row)
+####################
+#weight matrix for fortieth layer/thirty-ninth hidden layer")
+# print(W39)
+#####################
+# #Bias matrix for fortieth layer/thirty-ninth hidden layer
+
+B39 = []
+
+# bias matrix for Gamma 19 nodes
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+        for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = -2
+              temp_row.append(w)
+          B39.append(temp_row)
+
+# bias matrix for Gamma 20 nodes
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+        for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = -2
+              temp_row.append(w)
+          B39.append(temp_row)
+                     
+# bias matrix for varsigma 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B39.append(temp_row)
+
+# bias matrix for varsigma 4
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B39.append(temp_row)
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B39.append(temp_row)   
+# #####################       
+# print('Printing B39')
+# for i in B39:
+#     print(i)
+##################################
+L39 = []  # Gamma 19, Gamma 20 nodes
+for i in range(len(W39)):
+    temp_row = []
+    L39_i_entry = np.maximum((np.dot(W39[i], L38)+B39[i]), 0)
+    L39.append(L39_i_entry)
+##################################
+# print('Printing Gamma 19, Gamma 20 nodes for fortieth layer/thirty-ninth hidden layer')
+# for i in L39:
+#     print(i)
+# #####################
+# To construct weight matrix for fourty-one layer/fourtieth hidden layer is L40=W40*L39+B40
+W40= []
+
+# omega 3 nodes 
+Q89= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Gamma 19
+            for i in range(1, d+1):
+              for s in range(0, n+1):
+                    w = 0 
+                    if l==r and k==s and j==i:
+                          w=C
+                    temp_row.append(w)
+          Q89.append(temp_row)
+##########
+Q90= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Gamma 20
+            for i in range(1, d+1):
+              for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q90.append(temp_row)
+##########
+Q91= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    if l==i and k==r and j==s:
+                          w=1 
+                    temp_row.append(w)
+          Q91.append(temp_row)
+##########
+Q92= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q92.append(temp_row)
+##########
+Q93= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          Q93.append(temp_row)    
+##########
+for i in range(len(Q89)):
+    concatenated_row = Q89[i] +Q90[i]+ Q91[i]+Q92[i] + Q93[i]
+    W40.append(concatenated_row)
+##########
+# omega 4 nodes 
+Q94= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# Gamma 19
+            for s in range(1, d+1):
+              for r in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          Q94.append(temp_row)
+##########
+Q95= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Gamma 20
+            for i in range(1, d+1):
+              for s in range(0, n+1):
+                    w = 0 
+                    if l==r and k==s and j==i:
+                          w=C 
+                    temp_row.append(w)
+          Q95.append(temp_row)
+##########
+Q96= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for r in range(1, d+1):
+                for s in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q96.append(temp_row)
+##########
+Q97= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for s in range(1, d+1):
+                for r in range(0, n+1):
+                    w = 0 
+                    if l==i and k==r and j==s:
+                          w=1  
+                    temp_row.append(w)
+          Q97.append(temp_row)
+##########
+Q98= []
+for l in range(0, 2*n+1):
+   for j in range(1, d+1):
+     for k in range(0, n+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          Q98.append(temp_row)    
+##########
+for i in range(len(Q94)):
+    concatenated_row = Q94[i] +Q95[i]+ Q96[i]+Q97[i] + Q98[i]
+    W40.append(concatenated_row)
+##########
+# x 4  
+
+Q99= []
+for l in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Gamma 19
+            for j in range(1, d+1):
+              for k in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          Q99.append(temp_row)
+##########
+Q100= []
+for l in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# Gamma 20
+            for j in range(1, d+1):
+              for k in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          Q100.append(temp_row)
+##########
+Q101 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 3
+              for j in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q101.append(temp_row)
+##########
+Q102 = []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(0, 2*n+1):# varsigma 4
+              for j in range(1, d+1):
+                for k in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q102.append(temp_row)
+##########
+Q103= []
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if l==i :
+                          w=1
+                    temp_row.append(w)
+          Q103.append(temp_row)    
+##########
+for i in range(len(Q99)):
+    concatenated_row =  Q99[i] +Q100[i]+Q101[i] +Q102[i]+Q103[i]
+    W40.append(concatenated_row)
+####################
+#weight matrix for fourty-one layer/fourtieth hidden layer")
+# print(W40)
+#####################
+# #Bias matrix for fourty-one layer/fourtieth hidden layer
+
+B40 = []
+                     
+# bias matrix for omega 3
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = -C
+              temp_row.append(w)
+          B40.append(temp_row)
+
+# bias matrix for omega 4
+
+for l in range(0, 2*n+1):
+    for j in range(1, d+1):
+      for k in range(0, n+1):
+          temp_row = []
+          for i in range(1):
+              w = -C
+              temp_row.append(w)
+          B40.append(temp_row)
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B40.append(temp_row)   
+# #####################       
+# print('Printing B40')
+# for i in B40:
+#     print(i)
+##################################
+L40 = []  # omega 3, omega 4 nodes
+for i in range(len(W40)):
+    temp_row = []
+    L40_i_entry = np.maximum((np.dot(W40[i], L39)+B40[i]), 0)
+    L40.append(L40_i_entry)
+##################################
+# print('Printing omega 3, omega 4 nodes for fourty-one layer/fourtieth hidden layer')
+# for i in L40:
+#     print(i)
+# #####################
+# To construct weight matrix for fourty-two layer/fourty-one hidden layer is L41=W41*L40+B41
+W41= []
+
+# omega 5 nodes 
+Q104= []
+for j in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# omega 3
+            for i in range(1, d+1):
+              for s in range(0, n+1):
+                    w = 0 
+                    if j==i:
+                          w=1
+                    temp_row.append(w)
+          Q104.append(temp_row)
+##########
+Q105= []
+for j in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# omega 4
+            for i in range(1, d+1):
+              for s in range(0, n+1):
+                    w = 0  
+                    temp_row.append(w)
+          Q105.append(temp_row)
+##########
+Q106= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          Q106.append(temp_row)    
+##########
+for i in range(len(Q104)):
+    concatenated_row = Q104[i]+Q105[i] + Q106[i]
+    W41.append(concatenated_row)
+##########
+# omega 6 nodes 
+Q107= []
+for j in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# omega 3
+            for i in range(1, d+1):
+              for s in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          Q107.append(temp_row)
+##########
+Q108= []
+for j in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# omega 4
+            for i in range(1, d+1):
+              for s in range(0, n+1):
+                    w = 0 
+                    if j==i:
+                          w=1 
+                    temp_row.append(w)
+          Q108.append(temp_row)
+##########
+Q109= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          Q109.append(temp_row)    
+##########
+for i in range(len(Q107)):
+    concatenated_row = Q107[i]+Q108[i] + Q109[i]
+    W41.append(concatenated_row)
+##########
+# x 4  
+Q110= []
+for l in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# omega 3
+            for j in range(1, d+1):
+              for k in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          Q110.append(temp_row)
+##########
+Q111= []
+for l in range(1, d+1):
+          temp_row = []
+          for r in range(0, 2*n+1):# omega 4
+            for j in range(1, d+1):
+              for k in range(0, n+1):
+                    w = 0 
+                    temp_row.append(w)
+          Q111.append(temp_row)
+##########
+Q112= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if j==i:
+                          w=1 
+                    temp_row.append(w)
+          Q112.append(temp_row)    
+##########
+for i in range(len(Q110)):
+    concatenated_row = Q110[i]+Q111[i] + Q112[i]
+    W41.append(concatenated_row)
+####################
+#weight matrix for fourty-two layer/fourty-one hidden")
+# print(W41)
+#####################
+# #Bias matrix for fourty-two layer/fourty-one hidden layer
+
+B41 = []
+                     
+# bias matrix for omega 5
+
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B41.append(temp_row)
+
+# bias matrix for omega 6
+
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B41.append(temp_row)
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B41.append(temp_row)   
+# #####################       
+# print('Printing B41')
+# for i in B41:
+#     print(i)
+##################################
+L41 = []  # omega 5, omega 6 nodes
+for i in range(len(W41)):
+    temp_row = []
+    L41_i_entry = np.maximum((np.dot(W41[i], L40)+B41[i]), 0)
+    L41.append(L41_i_entry)
+##################################
+# print('Printing omega 5, omega 6 nodes for fourty-two layer/fourty-one hidden')
+# for i in L41:
+#     print(i)
+#####################
+# To construct weight matrix for fourty-three layer/fourty-two hidden layer is L42=W42*L41+B42
+W42= []
+
+# omega 5 nodes as identity map
+Q113= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 5
+                    w = 0 
+                    if j==k:
+                          w=1
+                    temp_row.append(w)
+          Q113.append(temp_row)
+##########
+Q114= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 6
+                    w = 0  
+                    temp_row.append(w)
+          Q114.append(temp_row)
+##########
+Q115= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          Q115.append(temp_row)    
+##########
+for i in range(len(Q113)):
+    concatenated_row = Q113[i]+Q114[i] + Q115[i]
+    W42.append(concatenated_row)
+##########
+# omega 6 nodes as identity map
+Q116= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 5
+                    w = 0 
+                    temp_row.append(w)
+          Q116.append(temp_row)
+##########
+Q117= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 6
+                    w = 0 
+                    if j==k:
+                          w=1 
+                    temp_row.append(w)
+          Q117.append(temp_row)
+##########
+Q118= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          Q118.append(temp_row)    
+##########
+for i in range(len(Q116)):
+    concatenated_row = Q116[i]+Q117[i] + Q118[i]
+    W42.append(concatenated_row)
+##########
+# alpha 81,82
+Q119= []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for k in range(1, d+1):# omega 5
+                    w = 0 
+                    if j==k:
+                          w=1/eps 
+                    temp_row.append(w)
+          Q119.append(temp_row)
+##########
+Q120= []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for k in range(1, d+1):# omega 6
+                    w = 0 
+                    if j==k:
+                          w=-1/eps 
+                    temp_row.append(w)
+          Q120.append(temp_row)
+##########
+Q121= []
+for j in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          Q121.append(temp_row)    
+##########
+for i in range(len(Q119)):
+    concatenated_row = Q119[i]+Q120[i] + Q121[i]
+    W42.append(concatenated_row)
+##########
+# rho 11,12  
+S36= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+       for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# omega 5
+                    w = 0 
+                    if l==j and j!=k:
+                        w=1/eps
+                    if l==k and j!=k:
+                        w=-1/eps
+                    temp_row.append(w)
+          S36.append(temp_row)
+##########
+S37= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+       for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# omega 6
+                    w = 0 
+                    temp_row.append(w)
+          S37.append(temp_row)
+##########
+S38= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+       for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          S38.append(temp_row)    
+##########
+for i in range(len(S36)):
+    concatenated_row = S36[i]+S37[i] + S38[i]
+    W42.append(concatenated_row)
+##########
+# varrho 11,12  
+S39= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+       for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# omega 5
+                    w = 0 
+                    if l==j and j!=k:
+                        w=-1/eps
+                    if l==k and j!=k:
+                        w=1/eps
+                    temp_row.append(w)
+          S39.append(temp_row)
+##########
+S40= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+       for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# omega 6
+                    w = 0 
+                    temp_row.append(w)
+          S40.append(temp_row)
+##########
+S41= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+       for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          S41.append(temp_row)    
+##########
+for i in range(len(S39)):
+    concatenated_row = S39[i]+S40[i] + S41[i]
+    W42.append(concatenated_row)
+##########
+# x 4  
+Q122= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 5
+                    w = 0 
+                    temp_row.append(w)
+          Q122.append(temp_row)
+##########
+Q123= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 6
+                    w = 0 
+                    temp_row.append(w)
+          Q123.append(temp_row)
+##########
+Q124= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if j==i:
+                          w=1
+                    temp_row.append(w)
+          Q124.append(temp_row)    
+##########
+for i in range(len(Q122)):
+    concatenated_row = Q122[i]+Q123[i] + Q124[i]
+    W42.append(concatenated_row)
+##########
+#weight matrix for fourty-three layer/fourty-two hidden layer")
+# print(W42)
+#####################
+# #Bias matrix for fourty-three layer/fourty-two hidden layer
+
+B42 = []
+                     
+# bias matrix for omega 5
+
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B42.append(temp_row)
+
+# bias matrix for omega 6
+
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B42.append(temp_row)
+
+# bias matrix for alpha 81,82
+
+for l in range(1, d+1):
+    for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              if q==0:
+                  w=1
+              temp_row.append(w)
+          B42.append(temp_row)
+          
+for j in range(1, d+1):  # (rho 11, 12 nodes)
+    for k in range(1, d+1):  
+      for q in range(2):
+        temp_row = []
+        for l in range(1):
+            b = 0
+            if q==0:
+                b=1
+            temp_row.append(b)
+        B42.append(temp_row) 
+############
+for j in range(1, d+1):  # (varrho 11, 12 nodes)
+    for k in range(1, d+1):  
+      for q in range(2):
+        temp_row = []
+        for l in range(1):
+            b = 0
+            if q==0:
+                b=1
+            temp_row.append(b)
+        B42.append(temp_row)           
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B42.append(temp_row)   
+# #####################       
+# print('Printing B42')
+# for i in B42:
+#     print(i)
+##################################
+L42 = []  # alpha 81,82 nodes
+for i in range(len(W42)):
+    temp_row = []
+    L42_i_entry = np.maximum((np.dot(W42[i], L41)+B42[i]), 0)
+    L42.append(L42_i_entry)
+##################################
+# print('Printing alpha 81,82 nodes for fourty-three layer/fourty-two hidden layer')
+# for i in L42:
+#     print(i)
+# #####################
+# To construct weight matrix for fourty-fourth layer/fourty-third hidden layer is L43=W43*L42+B43
+W43= []
+
+# omega 5 nodes as identity map
+R1= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 5
+                    w = 0 
+                    if j==k:
+                          w=1
+                    temp_row.append(w)
+          R1.append(temp_row)
+##########
+R2= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 6
+                    w = 0  
+                    temp_row.append(w)
+          R2.append(temp_row)
+##########
+R3= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# alpha 81,82
+              for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          R3.append(temp_row)
+##########
+S42= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# rho 11,12
+            for k in range(1, d+1):
+              for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          S42.append(temp_row)
+##########
+S43= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# varrho 11,12
+            for k in range(1, d+1):
+              for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          S43.append(temp_row)
+##########
+R4= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          R4.append(temp_row)    
+##########
+for i in range(len(R1)):
+    concatenated_row = R1[i]+R2[i] + R3[i]+ S42[i] + S43[i] + R4[i]
+    W43.append(concatenated_row)
+##########
+# omega 7
+R5= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 5
+                    w = 0 
+                    if j==k:
+                          w=1 
+                    temp_row.append(w)
+          R5.append(temp_row)
+##########
+R6= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 6
+                    w = 0 
+                    temp_row.append(w)
+          R6.append(temp_row)
+##########
+R7= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# alpha 81,82
+              for q in range(2):
+                    w = 0 
+                    if j==k:
+                        if q==0:
+                          w=C
+                        else:
+                            w=-C  
+                    temp_row.append(w)
+          R7.append(temp_row)
+##########
+S44= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# rho 11,12
+            for k in range(1, d+1):
+              for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          S44.append(temp_row)
+##########
+S45= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# varrho 11,12
+            for k in range(1, d+1):
+              for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          S45.append(temp_row)
+##########
+R8= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          R8.append(temp_row)    
+##########
+for i in range(len(R5)):
+    concatenated_row = R5[i]+R6[i] + R7[i]+ S44[i] + S45[i] + R8[i]
+    W43.append(concatenated_row)
+##########
+# omega 8
+R9= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 5
+                    w = 0 
+                    temp_row.append(w)
+          R9.append(temp_row)
+##########
+R10= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 6
+                    w = 0 
+                    if j==k:
+                          w=1 
+                    temp_row.append(w)
+          R10.append(temp_row)
+##########
+R11= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# alpha 81,82
+              for q in range(2):
+                    w = 0 
+                    if j==k:
+                        if q==0:
+                          w=-C
+                        else:
+                            w=C  
+                    temp_row.append(w)
+          R11.append(temp_row)
+##########
+S46= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# rho 11,12
+            for k in range(1, d+1):
+              for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          S46.append(temp_row)
+##########
+S47= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# varrho 11,12
+            for k in range(1, d+1):
+              for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          S47.append(temp_row)
+##########
+R12= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          R12.append(temp_row)    
+##########
+for i in range(len(R9)):
+    concatenated_row = R9[i]+R10[i] + R11[i]+ S46[i] + S47[i] + R12[i]
+    W43.append(concatenated_row)
+##########
+# gamma'
+S48= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 5
+                    w = 0 
+                    temp_row.append(w)
+          S48.append(temp_row)
+##########
+S49= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 6
+                    w = 0 
+                    temp_row.append(w)
+          S49.append(temp_row)
+##########
+S50= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# alpha 81,82
+              for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          S50.append(temp_row)
+##########
+S51= []
+for l in range(1, d+1):
+          temp_row = []
+          for j in range(1, d+1):# rho 11,12
+            for k in range(1, d+1):
+              for q in range(2):
+                    w = 0
+                    if l==j and k<l:
+                        if q==0:
+                            w=1
+                        else:
+                            w=-1
+                    temp_row.append(w)
+          S51.append(temp_row)
+##########
+S52= []
+for l in range(1, d+1):
+          temp_row = []
+          for j in range(1, d+1):# varrho 11,12
+            for k in range(1, d+1):
+              for q in range(2):
+                 w = 0
+                 if l==j and k>=l:
+                    if q==0:
+                       w=-1
+                    else:
+                       w=1  
+                 temp_row.append(w)
+          S52.append(temp_row)
+##########
+S53= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          S53.append(temp_row)    
+##########
+for i in range(len(S48)):
+    concatenated_row = S48[i]+S49[i] + S50[i] + S51[i] + S52[i] + S53[i]
+    W43.append(concatenated_row)
+##########
+# x 4  
+R13= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 5
+                    w = 0 
+                    temp_row.append(w)
+          R13.append(temp_row)
+##########
+R14= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 6
+                    w = 0 
+                    temp_row.append(w)
+          R14.append(temp_row)
+##########
+R15= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# alpha 81,82
+              for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          R15.append(temp_row)
+##########
+S54= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# rho 11,12
+            for k in range(1, d+1):
+              for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          S54.append(temp_row)
+##########
+S55= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# varrho 11,12
+            for k in range(1, d+1):
+              for q in range(2):
+                    w = 0  
+                    temp_row.append(w)
+          S55.append(temp_row)
+##########
+R16= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if j==i:
+                          w=1 
+                    temp_row.append(w)
+          R16.append(temp_row)    
+##########
+for i in range(len(R13)):
+    concatenated_row = R13[i]+R14[i] + R15[i] +S54[i] + S55[i] + R16[i]
+    W43.append(concatenated_row)
+##########
+#weight matrix for fourty-fourth layer/fourty-third hidden layer")
+# print(W43)
+#####################
+# #Bias matrix for fourty-fourth layer/fourty-third hidden layer
+
+B43 = []
+                     
+# bias matrix for omega 5
+
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B43.append(temp_row)
+
+# bias matrix for omega 7
+
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = -C-1
+              temp_row.append(w)
+          B43.append(temp_row)
+
+# bias matrix for omega 8
+
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B43.append(temp_row)
+
+# bias matrix for gamma'_j
+
+for j in range(1, d+1):
+    temp_row = []
+    for k in range(1):
+        b = d-j+1
+        temp_row.append(b)
+    B43.append(temp_row)          
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B43.append(temp_row)   
+# #####################       
+# print('Printing B43')
+# for i in B43:
+#     print(i)
+##################################
+L43 = []  # omega 7, omega 8 , gamma'nodes
+for i in range(len(W43)):
+    temp_row = []
+    L43_i_entry = np.maximum((np.dot(W43[i], L42)+B43[i]), 0)
+    L43.append(L43_i_entry)
+##################################
+# print('Printing omega 7, omega 8, gamma prime nodes for fourty-fourth layer/fourty-third hidden layer')
+# for i in L43:
+#     print(i)
+# #####################
+# To construct weight matrix for fourty-fifth layer/fourty-fourth hidden layer is L44=W44*L43+B44
+W44= []
+
+# omega 6 nodes as identity map
+R17= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 5
+                    w = 0 
+                    if j==k:
+                          w=1
+                    temp_row.append(w)
+          R17.append(temp_row)
+##########
+R18= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 7
+                    w = 0  
+                    temp_row.append(w)
+          R18.append(temp_row)
+##########
+R19= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 8
+                    w = 0  
+                    temp_row.append(w)
+          R19.append(temp_row)
+##########
+S56= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# gamma'
+                    w = 0  
+                    temp_row.append(w)
+          S56.append(temp_row)
+##########
+R20= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          R20.append(temp_row)    
+##########
+for i in range(len(R17)):
+    concatenated_row = R17[i]+R18[i] + R19[i] + S56[i]+ R20[i]
+    W44.append(concatenated_row)
+##########
+# omega 9
+R21= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 5
+                    w = 0 
+                    temp_row.append(w)
+          R21.append(temp_row)
+##########
+R22= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 7
+                    w = 0 
+                    if j==k:
+                          w=1 
+                    temp_row.append(w)
+          R22.append(temp_row)
+##########
+R23= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 8
+                    w = 0 
+                    if j==k:
+                          w=1  
+                    temp_row.append(w)
+          R23.append(temp_row)
+##########
+S57= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# gamma'
+                    w = 0  
+                    temp_row.append(w)
+          S57.append(temp_row)
+##########
+R24= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          R24.append(temp_row)    
+##########
+for i in range(len(R21)):
+    concatenated_row = R21[i]+R22[i] + R23[i] + S57[i] + R24[i]
+    W44.append(concatenated_row)
+##########
+# rho 21,22
+S58= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# omega 5
+                    w = 0 
+                    temp_row.append(w)
+          S58.append(temp_row)          
+##########
+S59= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# omega 7
+                    w = 0  
+                    temp_row.append(w)
+          S59.append(temp_row)
+##########
+S60= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# omega 8
+                    w = 0  
+                    temp_row.append(w)
+          S60.append(temp_row)
+##########
+S61= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# gamma'
+                    w = 0 
+                    if l==k:
+                         w=-1/eps  
+                    temp_row.append(w)
+          S61.append(temp_row)          
+##########
+S62= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          S62.append(temp_row)    
+##########
+for i in range(len(S58)):
+    concatenated_row = S58[i]+ S59[i] + S60[i] + S61[i] + S62[i]
+    W44.append(concatenated_row)
+##########
+# varrho 21,22
+S63= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# omega 5
+                    w = 0 
+                    temp_row.append(w)
+          S63.append(temp_row)
+##########
+S64= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# omega 7
+                    w = 0  
+                    temp_row.append(w)
+          S64.append(temp_row)
+##########
+S65= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# omega 8
+                    w = 0  
+                    temp_row.append(w)
+          S65.append(temp_row)
+##########
+S66= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for l in range(1, d+1):# gamma'
+                    w = 0 
+                    if l==k:
+                          w=1/eps  
+                    temp_row.append(w)
+          S66.append(temp_row)
+##########
+S67= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          S67.append(temp_row)    
+##########
+for i in range(len(S63)):
+    concatenated_row = S63[i]+S64[i] + S65[i] + S66[i] + S67[i]
+    W44.append(concatenated_row)
+##########
+# x 4  
+R25= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 5
+                    w = 0 
+                    temp_row.append(w)
+          R25.append(temp_row)
+##########
+R26= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 7
+                    w = 0 
+                    temp_row.append(w)
+          R26.append(temp_row)
+##########
+R27= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega 8
+                    w = 0  
+                    temp_row.append(w)
+          R27.append(temp_row)
+##########
+S68= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# gamma'
+                    w = 0   
+                    temp_row.append(w)
+          S68.append(temp_row)
+##########
+R28= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if j==i:
+                          w=1 
+                    temp_row.append(w)
+          R28.append(temp_row)    
+##########
+for i in range(len(R25)):
+    concatenated_row = R25[i]+R26[i] + R27[i] + S68[i] + R28[i]
+    W44.append(concatenated_row)
+##########
+#weight matrix for fourty-fifth layer/fourty-fourth hidden layer")
+# print(W44)
+#####################
+# #Bias matrix for fourty-fifth layer/fourty-fourth hidden layer
+
+B44 = []
+                     
+# bias matrix for omega 5
+
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B44.append(temp_row)
+
+# bias matrix for omega 9
+
+for l in range(1, d+1):
+          temp_row = []
+          for i in range(1):
+              w = 1
+              temp_row.append(w)
+          B44.append(temp_row)
+
+# bias matrix for rho 21,22 nodes
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+            temp_row = []
+            for i in range(1):
+                b = 0
+                if q == 0:
+                    b = ((j-1)/eps)+1
+                else:
+                    b = (j-1)/eps
+                temp_row.append(b)
+            B44.append(temp_row)
+
+# bias matrix for varrho 21,22 nodes
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+            temp_row = []
+            for i in range(1):
+                b = 0
+                if q == 0:
+                    b = ((1-j)/eps)+1
+                else:
+                    b = (1-j)/eps
+                temp_row.append(b)
+            B44.append(temp_row)         
+  
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B44.append(temp_row)   
+# #####################       
+# print('Printing B44')
+# for i in B44:
+#     print(i)
+##################################
+L44 = []  # omega 9 nodes
+for i in range(len(W44)):
+    temp_row = []
+    L44_i_entry = np.maximum((np.dot(W44[i], L43)+B44[i]), 0)
+    L44.append(L44_i_entry)
+##################################
+# print('Printing omega 9 nodes for fourty-fifth layer/fourty-fourth hidden layer layer')
+# for i in L44:
+#     print(i)
+#####################
+# To construct weight matrix for fourty-sixth layer/fourty-fifth hidden layer is L45=W45*L44+B45
+W45= []
+
+# Phi 1 nodes
+S69= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# omega 5
+                    w = 0 
+                    if i==k:
+                          w=1
+                    temp_row.append(w)
+          S69.append(temp_row)
+##########
+S70= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# omega 9
+                    w = 0  
+                    temp_row.append(w)
+          S70.append(temp_row)
+##########
+S71= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                  for q in range(2):
+                     w = 0 
+                     if j==i and k==l:
+                         if q==0:
+                             w=C
+                         else:
+                             w=-C
+                     temp_row.append(w)
+          S71.append(temp_row)
+##########
+S72= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                  for q in range(2):
+                     w = 0 
+                     if j==i and k==l:
+                         if q==0:
+                             w=C
+                         else:
+                             w=-C
+                     temp_row.append(w)
+          S72.append(temp_row)
+##########
+S73= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for k in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          S73.append(temp_row)    
+##########
+for i in range(len(S69)):
+    concatenated_row = S69[i]+ S70[i] + S71[i] +S72[i] + S73[i]
+    W45.append(concatenated_row)
+##########
+# Phi 2 nodes
+S74= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# omega 5
+                    w = 0 
+                    temp_row.append(w)
+          S74.append(temp_row)
+##########
+S75= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# omega 9
+                    w = 0
+                    if i==k:
+                          w=1  
+                    temp_row.append(w)
+          S75.append(temp_row)
+##########
+S76= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                  for q in range(2):
+                     w = 0 
+                     if j==i and k==l:
+                         if q==0:
+                             w=C
+                         else:
+                             w=-C
+                     temp_row.append(w)
+          S76.append(temp_row)
+##########
+S77= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                  for q in range(2):
+                     w = 0 
+                     if j==i and k==l:
+                         if q==0:
+                             w=C
+                         else:
+                             w=-C
+                     temp_row.append(w)
+          S77.append(temp_row)
+##########
+S78= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          S78.append(temp_row)    
+##########
+for i in range(len(S74)):
+    concatenated_row = S74[i]+ S75[i] + S76[i] +S77[i] + S78[i]
+    W45.append(concatenated_row)
+##########    
+# Phi 3  
+S79= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# omega 5
+                    w = 0 
+                    temp_row.append(w)
+          S79.append(temp_row)
+##########
+S80= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# omega 9
+                    w = 0 
+                    temp_row.append(w)
+          S80.append(temp_row)
+##########
+S81= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                  for q in range(2):
+                     w = 0 
+                     if j==i and k==l:
+                         if q==0:
+                             w=C
+                         else:
+                             w=-C
+                     temp_row.append(w)
+          S81.append(temp_row)
+##########
+S82= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):
+              for l in range(1, d+1):
+                  for q in range(2):
+                     w = 0
+                     if j==i and k==l:
+                         if q==0:
+                             w=C
+                         else:
+                             w=-C 
+                     temp_row.append(w)
+          S82.append(temp_row)
+##########
+S83= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if k==i:
+                          w=1 
+                    temp_row.append(w)
+          S83.append(temp_row)    
+##########
+for i in range(len(S79)):
+    concatenated_row = S79[i] + S80[i]+ S81[i] + S82[i] + S83[i]
+    W45.append(concatenated_row)
+##########
+#weight matrix for fourty-sixth layer/fourty-seventh hidden layer")
+# print(W45)
+#####################
+# #Bias matrix for fourty-sixth layer/fourty-seventh hidden layer
+
+B45 = []
+                     
+# bias matrix for Phi 1
+
+for j in range(1, d+1):
+   for k in range(1, d+1):
+     temp_row=[]
+     for i in range(1):
+        w=-2*C
+        temp_row.append(w)
+     B45.append(temp_row)
+
+# bias matrix for Phi 2
+
+for j in range(1, d+1):
+   for k in range(1, d+1):
+     temp_row=[]
+     for i in range(1):
+        w=-2*C
+        temp_row.append(w)
+     B45.append(temp_row)
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):
+   for k in range(1, d+1):
+     temp_row=[]
+     for i in range(1):
+        w=-2*C
+        temp_row.append(w)
+     B45.append(temp_row)   
+# #####################       
+# print('Printing B45')
+# for i in B45:
+#     print(i)
+##################################
+L45 = []  # Phi 1, Phi 2 nodes
+for i in range(len(W45)):
+    temp_row = []
+    L45_i_entry = np.maximum((np.dot(W45[i], L44)+B45[i]), 0)
+    L45.append(L45_i_entry)
+##################################
+# print('Printing Phi 1, Phi 2 nodes for fourty-sixth layer/fourty-fifth hidden layer')
+# for i in L45:
+#     print(i)
+#####################
+# To construct weight matrix for fourty-seventh layer/fourty-sixth hidden layer is L46=W46*L45+B46
+W46= []
+
+# omega'5 nodes
+S84= []
+for i in range(1, d+1):
+          temp_row = []
+          for j in range(1, d+1):# Phi 1
+             for k in range(1, d+1):
+                    w = 0 
+                    if i==j:
+                          w=1
+                    temp_row.append(w)
+          S84.append(temp_row)
+##########
+S85= []
+for i in range(1, d+1):
+          temp_row = []
+          for j in range(1, d+1):# Phi 2
+             for k in range(1, d+1):
+                    w = 0  
+                    temp_row.append(w)
+          S85.append(temp_row)
+##########
+S86= []
+for i in range(1, d+1):
+          temp_row = []
+          for j in range(1, d+1):# Phi 3
+             for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          S86.append(temp_row)    
+##########
+for i in range(len(S84)):
+    concatenated_row = S84[i]+ S85[i] + S86[i] 
+    W46.append(concatenated_row)
+##########
+# omega'9 nodes
+S87= []
+for i in range(1, d+1):
+          temp_row = []
+          for j in range(1, d+1):# Phi 1
+             for k in range(1, d+1):
+                    w = 0 
+                    temp_row.append(w)
+          S87.append(temp_row)
+##########
+S88= []
+for i in range(1, d+1):
+          temp_row = []
+          for j in range(1, d+1):# Phi 2
+             for k in range(1, d+1):
+                    w = 0 
+                    if i==j:
+                          w=1 
+                    temp_row.append(w)
+          S88.append(temp_row)
+##########
+S89= []
+for i in range(1, d+1):
+          temp_row = []
+          for j in range(1, d+1):# Phi 3
+             for k in range(1, d+1):
+                    w = 0
+                    temp_row.append(w)
+          S89.append(temp_row)    
+##########
+for i in range(len(S87)):
+    concatenated_row = S87[i]+ S88[i] + S89[i] 
+    W46.append(concatenated_row)
+##########
+# x4 nodes
+S90= []
+for i in range(1, d+1):
+          temp_row = []
+          for j in range(1, d+1):# Phi 1
+             for k in range(1, d+1):
+                    w = 0 
+                    temp_row.append(w)
+          S90.append(temp_row)
+##########
+S91= []
+for i in range(1, d+1):
+          temp_row = []
+          for j in range(1, d+1):# Phi 2
+             for k in range(1, d+1):
+                    w = 0 
+                    temp_row.append(w)
+          S91.append(temp_row)
+##########
+S92= []
+for i in range(1, d+1):
+          temp_row = []
+          for j in range(1, d+1):# Phi 3
+             for k in range(1, d+1):
+                    w = 0
+                    if i==j:
+                          w=1 
+                    temp_row.append(w)
+          S92.append(temp_row)    
+##########
+for i in range(len(S90)):
+    concatenated_row = S90[i]+ S91[i] + S92[i] 
+    W46.append(concatenated_row)
+#########
+#weight matrix for fourty-seventh layer/fourty-sixth hidden layer")
+# print(W46)
+#####################
+# #Bias matrix for fourty-seventh layer/fourty-sixth hidden layer
+
+B46 = []
+                     
+# bias matrix for omega'5
+
+for j in range(1, d+1):
+     temp_row=[]
+     for i in range(1):
+        w=0
+        temp_row.append(w)
+     B46.append(temp_row)
+
+# bias matrix for omega'9
+
+for j in range(1, d+1):
+     temp_row=[]
+     for i in range(1):
+        w=0
+        temp_row.append(w)
+     B46.append(temp_row)
+           
+# bias matrix for x'4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B46.append(temp_row)   
+# #####################       
+# print('Printing B46')
+# for i in B46:
+#     print(i)
+##################################
+L46 = []  # omega'5, omega'9 nodes
+for i in range(len(W46)):
+    temp_row = []
+    L46_i_entry = np.maximum((np.dot(W46[i], L45)+B46[i]), 0)
+    L46.append(L46_i_entry)
+##################################
+# print('Printing omega prime 5, omega prime 9, x 4 prime nodes for fourty-seventh layer/fourty-sixth hidden layer')
+# for i in L46:
+#     print(i)
+#######################
+v = len(L46) // 3  # To print first 2d values of L46 that showes the required indices where insertion is required.
+first_2d_values = L46[:2*d]  
+
+indices = [int(array[0]) for array in first_2d_values]    
+
+# print("Indices of Euler string before which insertions are required:", indices)
+#######################
+# To construct weight matrix for fourty-eighth layer/fourty-seventh hidden layer is L47=W47*L46+B47
+W47= []
+
+# Sigma 11,12 nodes
+R29= []
+for i in range(1, 2*n+2):
+    for j in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for k in range(1, d+1):# omega' 5
+                    w = 0 
+                    if j==k:
+                          w=1/eps
+                    temp_row.append(w)
+          R29.append(temp_row)
+##########
+R30= []
+for i in range(1, 2*n+2):
+    for j in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for k in range(1, d+1):# omega' 9
+                    w = 0  
+                    temp_row.append(w)
+          R30.append(temp_row)
+##########
+R31= []
+for i in range(1, 2*n+2):
+    for j in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for k in range(1, d+1):# x'4 nodes
+                    w = 0
+                    temp_row.append(w)
+          R31.append(temp_row)    
+##########
+for i in range(len(R29)):
+    concatenated_row = R29[i]+R30[i] + R31[i] 
+    W47.append(concatenated_row)
+##########
+# Xi 11,12 nodes
+R32= []
+for i in range(1, 2*n+2):
+    for j in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for k in range(1, d+1):# omega' 5
+                    w = 0 
+                    if j==k:
+                          w=-1/eps
+                    temp_row.append(w)
+          R32.append(temp_row)
+##########
+R33= []
+for i in range(1, 2*n+2):
+    for j in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for k in range(1, d+1):# omega' 9
+                    w = 0  
+                    temp_row.append(w)
+          R33.append(temp_row)
+##########
+R34= []
+for i in range(1, 2*n+2):
+    for j in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for k in range(1, d+1):# x'4 nodes
+                    w = 0
+                    temp_row.append(w)
+          R34.append(temp_row)    
+##########
+for i in range(len(R32)):
+    concatenated_row = R32[i]+R33[i] + R34[i] 
+    W47.append(concatenated_row)
+##########
+# Sigma 21,22 nodes
+R35= []
+for i in range(1, 2*n+2):
+    for j in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for k in range(1, d+1):# omega' 5
+                    w = 0 
+                    temp_row.append(w)
+          R35.append(temp_row)
+##########
+R36= []
+for i in range(1, 2*n+2):
+    for j in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for k in range(1, d+1):# omega' 9
+                    w = 0
+                    if j==k:
+                          w=1/eps  
+                    temp_row.append(w)
+          R36.append(temp_row)
+##########
+R37= []
+for i in range(1, 2*n+2):
+    for j in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for k in range(1, d+1):# x'4 nodes
+                    w = 0
+                    temp_row.append(w)
+          R37.append(temp_row)    
+##########
+for i in range(len(R35)):
+    concatenated_row = R35[i]+R36[i] + R37[i] 
+    W47.append(concatenated_row)
+##########
+# Xi 21,22 nodes
+R38= []
+for i in range(1, 2*n+2):
+    for j in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for k in range(1, d+1):# omega' 5
+                    w = 0 
+                    temp_row.append(w)
+          R38.append(temp_row)
+##########
+R39= []
+for i in range(1, 2*n+2):
+    for j in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for k in range(1, d+1):# omega' 9
+                    w = 0 
+                    if j==k:
+                          w=-1/eps 
+                    temp_row.append(w)
+          R39.append(temp_row)
+##########
+R40= []
+for i in range(1, 2*n+2):
+    for j in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for k in range(1, d+1):# x'4 nodes
+                    w = 0
+                    temp_row.append(w)
+          R40.append(temp_row)    
+##########
+for i in range(len(R38)):
+    concatenated_row = R38[i]+R39[i] + R40[i] 
+    W47.append(concatenated_row)
+##########
+# Sigma 31,32 nodes
+R41= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# omega' 5
+                    w = 0
+                    if j==i:
+                          w=1/eps  
+                    temp_row.append(w)
+          R41.append(temp_row)
+##########
+R42= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# omega' 9
+                    w = 0
+                    if k==i:
+                          w=-1/eps  
+                    temp_row.append(w)
+          R42.append(temp_row)
+##########
+R43= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x'4 nodes
+                    w = 0
+                    temp_row.append(w)
+          R43.append(temp_row)    
+##########
+for i in range(len(R41)):
+    concatenated_row = R41[i]+R42[i] + R43[i] 
+    W47.append(concatenated_row)
+##########
+# Xi 31,32 nodes
+R44= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# omega' 5
+                    w = 0
+                    if i==k:
+                          w=1/eps  
+                    temp_row.append(w)
+          R44.append(temp_row)
+##########
+R45= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# omega' 9
+                    w = 0
+                    if i==j:
+                          w=-1/eps  
+                    temp_row.append(w)
+          R45.append(temp_row)
+##########
+R46= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x'4 nodes
+                    w = 0
+                    temp_row.append(w)
+          R46.append(temp_row)    
+##########
+for i in range(len(R44)):
+    concatenated_row = R44[i]+R45[i] + R46[i] 
+    W47.append(concatenated_row)
+##########
+# Sigma 41,42 nodes
+R47= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# omega' 5
+                    w = 0 
+                    temp_row.append(w)
+          R47.append(temp_row)
+##########
+R48= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# omega' 9
+                    w = 0
+                    if j==i and j!=k:
+                          w=1/eps 
+                    if k==i and j!=k:
+                            w=-1/eps     
+                    temp_row.append(w)
+          R48.append(temp_row)
+##########
+R49= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x'4 nodes
+                    w = 0
+                    temp_row.append(w)
+          R49.append(temp_row)    
+##########
+for i in range(len(R47)):
+    concatenated_row = R47[i]+R48[i] + R49[i] 
+    W47.append(concatenated_row)
+##########
+# Xi 41,42 nodes
+R50= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# omega' 5
+                    w = 0  
+                    temp_row.append(w)
+          R50.append(temp_row)
+##########
+R51= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# omega' 9
+                    w = 0
+                    if j==i and j!=k:
+                          w=-1/eps 
+                    if k==i and j!=k:
+                            w=1/eps  
+                    temp_row.append(w)
+          R51.append(temp_row)
+##########
+R52= []
+for j in range(1, d+1):
+    for k in range(1, d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1, d+1):# x'4 nodes
+                    w = 0
+                    temp_row.append(w)
+          R52.append(temp_row)    
+##########
+for i in range(len(R50)):
+    concatenated_row = R50[i] + R51[i] + R52[i] 
+    W47.append(concatenated_row)
+##########
+# omega 5 nodes as identity map  
+R53= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega' 5
+                    w = 0 
+                    if j==k:
+                          w=1 
+                    temp_row.append(w)
+          R53.append(temp_row)
+##########
+R54= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega' 9
+                    w = 0 
+                    temp_row.append(w)
+          R54.append(temp_row)
+##########
+R55= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x'4 nodes
+                    w = 0
+                    temp_row.append(w)
+          R55.append(temp_row)    
+##########
+for i in range(len(R53)):
+    concatenated_row = R53[i] + R54[i] + R55[i]
+    W47.append(concatenated_row)
+##########
+# omega 9 nodes as identity map  
+R56= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega' 5
+                    w = 0 
+                    temp_row.append(w)
+          R56.append(temp_row)
+##########
+R57= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega' 9
+                    w = 0
+                    if j==k:
+                          w=1  
+                    temp_row.append(w)
+          R57.append(temp_row)
+##########
+R58= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x'4 nodes
+                    w = 0
+                    temp_row.append(w)
+          R58.append(temp_row)    
+##########
+for i in range(len(R56)):
+    concatenated_row = R56[i] + R57[i] + R58[i]
+    W47.append(concatenated_row)
+##########
+# x 4  
+R59= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega' 5
+                    w = 0 
+                    temp_row.append(w)
+          R59.append(temp_row)
+##########
+R60= []
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1, d+1):# omega' 9
+                    w = 0 
+                    temp_row.append(w)
+          R60.append(temp_row)
+##########
+R61= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x'4 nodes
+                    w = 0
+                    if j==i:
+                          w=1 
+                    temp_row.append(w)
+          R61.append(temp_row)    
+##########
+for i in range(len(R58)):
+    concatenated_row = R58[i] + R59[i] + R61[i]
+    W47.append(concatenated_row)
+##########
+#weight matrix for fourty-eighth layer/fourty-seventh hidden layer")
+# print(W47)
+#####################
+# #Bias matrix for fourty-eighth layer/fourty-seventh hidden layer
+
+B47 = []
+                     
+# bias matrix for Sigma 11,12
+
+for i in range(1, 2*n+2):
+    for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              if q==0:
+                  w=(-i/eps)+1
+              else:
+                    w=(-i/eps)
+              temp_row.append(w)
+          B47.append(temp_row)
+
+# bias matrix for Xi 11,12
+
+for i in range(1, 2*n+2):
+    for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              if q==0:
+                  w=(i/eps)+1
+              else:
+                    w=(i/eps)
+              temp_row.append(w)
+          B47.append(temp_row)
+
+# bias matrix for Sigma 21,22
+
+for i in range(1, 2*n+2):
+    for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              if q==0:
+                  w=(-i/eps)+1
+              else:
+                    w=(-i/eps)
+              temp_row.append(w)
+          B47.append(temp_row)
+
+# bias matrix for Xi 21,22
+
+for i in range(1, 2*n+2):
+    for j in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              if q==0:
+                  w=(i/eps)+1
+              else:
+                    w=(i/eps)
+              temp_row.append(w)
+          B47.append(temp_row)
+          
+# bias matrix for Sigma 31,32
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              if q==0:
+                  w=1
+              temp_row.append(w)
+          B47.append(temp_row)
+
+# bias matrix for Xi 31,32
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              if q==0:
+                  w=1
+              temp_row.append(w)
+          B47.append(temp_row)
+          
+# bias matrix for Sigma 41,42
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              if q==0:
+                  w=1
+              temp_row.append(w)
+          B47.append(temp_row)
+
+# bias matrix for Xi 41,42
+
+for j in range(1, d+1):
+    for k in range(1, d+1):
+      for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              if q==0:
+                  w=1
+              temp_row.append(w)
+          B47.append(temp_row)
+          
+# bias matrix for omega 5
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B47.append(temp_row)
+
+# bias matrix for omega 9
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B47.append(temp_row)
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B47.append(temp_row)   
+# #####################       
+# print('Printing B47')
+# for i in B47:
+#     print(i)
+##################################
+L47 = []  # Sigma 11,12, Xi 11,12, Sigma 21,22, Xi 21,22, Sigma 31,32, Xi 31,32, Sigma 41,42, Xi 41,42 nodes
+for i in range(len(W47)):
+    temp_row = []
+    L47_i_entry = np.maximum((np.dot(W47[i], L46)+B47[i]), 0)
+    L47.append(L47_i_entry)
+##################################
+# print('Printing Sigma 11,12, Xi 11,12, Sigma 21,22, Xi 21,22, Sigma 31,32, Xi 31,32, Sigma 41,42, Xi 41,42 nodes for fourty-eighth layer/fourty-seventh hidden layer')
+# for i in L47:
+#     print(i)
+######################
+# To construct weight matrix for fourty-ninth layer/fourty-eighth hidden layer is L48=W48*L47+B48
+W48= []
+
+# Lambda 1 nodes
+R62= []
+for i in range(1, 2*n+2):
+          temp_row = []
+          for l in range(1, 2*n+2):# Sigma 11,12
+              for j in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    if i==l:
+                        if q==0: 
+                          w=1
+                        else:
+                          w=-1
+                    temp_row.append(w)
+          R62.append(temp_row)
+##########
+R63= []
+for i in range(1, 2*n+2):
+          temp_row = []
+          for l in range(1, 2*n+2):# Xi 11,12
+              for j in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    if i==l:
+                        if q==0: 
+                          w=1
+                        else:
+                          w=-1
+                    temp_row.append(w)
+          R63.append(temp_row)
+##########
+R64= []
+for i in range(1, 2*n+2):
+          temp_row = []
+          for l in range(1, 2*n+2):# Sigma 21,22
+              for j in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    if i==l:
+                        if q==0: 
+                          w=1
+                        else:
+                          w=-1
+                    temp_row.append(w)
+          R64.append(temp_row)
+##########
+R65= []
+for i in range(1, 2*n+2):
+          temp_row = []
+          for l in range(1, 2*n+2):# Xi 21,22
+              for j in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    if i==l:
+                        if q==0: 
+                          w=1
+                        else:
+                          w=-1
+                    temp_row.append(w)
+          R65.append(temp_row)
+##########
+R66= []
+for i in range(1, 2*n+2):
+          temp_row = []
+          for l in range(1, d+1):# Sigma 31,32
+              for j in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R66.append(temp_row)
+##########
+R67= []
+for i in range(1, 2*n+2):
+          temp_row = []
+          for l in range(1, d+1):# Xi 31,32
+              for j in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R67.append(temp_row)
+##########
+R68= []
+for i in range(1, 2*n+2):
+          temp_row = []
+          for l in range(1, d+1):# Sigma 41,42
+              for j in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R68.append(temp_row)
+##########
+R69= []
+for i in range(1, 2*n+2):
+          temp_row = []
+          for l in range(1, d+1):# Xi 41,42
+              for j in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R69.append(temp_row)
+##########
+R70= []
+for i in range(1, 2*n+2):
+          temp_row = []
+          for j in range(1, d+1):# omega 5 nodes
+                    w = 0
+                    temp_row.append(w)
+          R70.append(temp_row)    
+##########
+R71= []
+for i in range(1, 2*n+2):
+          temp_row = []
+          for j in range(1, d+1):# omega 9 nodes
+                    w = 0
+                    temp_row.append(w)
+          R71.append(temp_row)    
+##########
+R72= []
+for i in range(1, 2*n+2):
+          temp_row = []
+          for j in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          R72.append(temp_row)    
+##########
+for i in range(len(R62)):
+    concatenated_row = R62[i] + R63[i] + R64[i] + R65[i] + R66[i] + R67[i] + R68[i] + R69[i] + R70[i] + R71[i]+ R72[i]
+    W48.append(concatenated_row)
+##########
+# varpi 1 nodes
+R73= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, 2*n+2):# Sigma 11,12
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R73.append(temp_row)
+##########
+R74= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, 2*n+2):# Xi 11,12
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R74.append(temp_row)
+##########
+R75= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, 2*n+2):# Sigma 21,22
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R75.append(temp_row)
+##########
+R76= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, 2*n+2):# Xi 21,22
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R76.append(temp_row)
+##########
+R77= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Sigma 31,32
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    if j==l and k<j:
+                        if q==0: 
+                          w=1
+                        else:
+                          w=-1
+                    temp_row.append(w)
+          R77.append(temp_row)
+##########
+R78= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Xi 31,32
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R78.append(temp_row)
+##########
+R79= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Sigma 41,42
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R79.append(temp_row)
+##########
+R80= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Xi 41,42
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R80.append(temp_row)
+##########
+R81= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# omega 5 nodes
+                    w = 0
+                    if j==i:
+                        w=1
+                    temp_row.append(w)
+          R81.append(temp_row)    
+##########
+R82= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# omega 9 nodes
+                    w = 0
+                    temp_row.append(w)
+          R82.append(temp_row)    
+##########
+R83= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          R83.append(temp_row)    
+##########
+for i in range(len(R73)):
+    concatenated_row = R73[i] + R74[i] + R75[i] + R76[i]+R77[i] + R78[i]+ R79[i] + R80[i] + R81[i]+R82[i] + R83[i]
+    W48.append(concatenated_row)
+##########
+# varpi 2 nodes
+R84= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, 2*n+2):# Sigma 11,12
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R84.append(temp_row)
+##########
+R85= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, 2*n+2):# Xi 11,12
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R85.append(temp_row)
+##########
+R86= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, 2*n+2):# Sigma 21,22
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R86.append(temp_row)
+##########
+R87= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, 2*n+2):# Xi 21,22
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R87.append(temp_row)
+##########
+R88= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Sigma 31,32
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R88.append(temp_row)
+##########
+R89= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Xi 31,32
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    if j==l and k>j:
+                        if q==0: 
+                          w=-1
+                        else:
+                          w=1
+                    temp_row.append(w)
+          R89.append(temp_row)
+##########
+R90= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Sigma 41,42
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    if j==l and k<j:
+                        if q==0: 
+                          w=1
+                        else:
+                          w=-1
+                    temp_row.append(w)
+          R90.append(temp_row)
+##########
+R91= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Xi 41,42
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0
+                    if j==l and k>=j:
+                        if q==0: 
+                          w=-1
+                        else:
+                          w=1 
+                    temp_row.append(w)
+          R91.append(temp_row)
+##########
+R92= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# omega 5 nodes
+                    w = 0
+                    temp_row.append(w)
+          R92.append(temp_row)    
+##########
+R93= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# omega 9 nodes
+                    w = 0
+                    if j==i:
+                        w=1
+                    temp_row.append(w)
+          R93.append(temp_row)    
+##########
+R94= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    temp_row.append(w)
+          R94.append(temp_row)    
+##########
+for i in range(len(R84)):
+    concatenated_row = R84[i] + R85[i] + R86[i] + R87[i]+R88[i] + R89[i]+ R90[i] + R91[i] + R92[i]+R93[i] + R94[i]
+    W48.append(concatenated_row)
+##########
+# x4 nodes as identity map
+R95= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, 2*n+2):# Sigma 11,12
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R95.append(temp_row)
+##########
+R96= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, 2*n+2):# Xi 11,12
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R96.append(temp_row)
+##########
+R97= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, 2*n+2):# Sigma 21,22
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R97.append(temp_row)
+##########
+R98= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, 2*n+2):# Xi 21,22
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R98.append(temp_row)
+##########
+R99= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Sigma 31,32
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R99.append(temp_row)
+##########
+R100= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Xi 31,32
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R100.append(temp_row)
+##########
+R101= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Sigma 41,42
+              for j in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R101.append(temp_row)
+##########
+R102= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Xi 41,42
+              for j in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R102.append(temp_row)
+##########
+R103= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# omega 5 nodes
+                    w = 0
+                    temp_row.append(w)
+          R103.append(temp_row)    
+##########
+R104= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# omega 9 nodes
+                    w = 0
+                    temp_row.append(w)
+          R104.append(temp_row)    
+##########
+R105= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if j==i:
+                        w=1
+                    temp_row.append(w)
+          R105.append(temp_row)    
+##########
+for i in range(len(R95)):
+    concatenated_row = R95[i] + R96[i] + R97[i] + R98[i]+R99[i] + R100[i]+ R101[i] + R102[i] + R103[i]+R104[i] + R105[i]
+    W48.append(concatenated_row)
+##########
+# x4 prime nodes 
+R106= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, 2*n+2):# Sigma 11,12
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R106.append(temp_row)
+##########
+R107= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, 2*n+2):# Xi 11,12
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R107.append(temp_row)
+##########
+R108= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, 2*n+2):# Sigma 21,22
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R108.append(temp_row)
+##########
+R109= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, 2*n+2):# Xi 21,22
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R109.append(temp_row)
+##########
+R110= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Sigma 31,32
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R110.append(temp_row)
+##########
+R111= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Xi 31,32
+              for k in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R111.append(temp_row)
+##########
+R112= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Sigma 41,42
+              for j in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R112.append(temp_row)
+##########
+R113= []
+for j in range(1, d+1):
+          temp_row = []
+          for l in range(1, d+1):# Xi 41,42
+              for j in range(1, d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R113.append(temp_row)
+##########
+R114= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# omega 5 nodes
+                    w = 0
+                    temp_row.append(w)
+          R114.append(temp_row)    
+##########
+R115= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# omega 9 nodes
+                    w = 0
+                    temp_row.append(w)
+          R115.append(temp_row)    
+##########
+R116= []
+for j in range(1, d+1):
+          temp_row = []
+          for i in range(1, d+1):# x4 nodes
+                    w = 0
+                    if j==i:
+                        w=1
+                    temp_row.append(w)
+          R116.append(temp_row)    
+##########
+for i in range(len(R106)):
+    concatenated_row = R106[i] + R107[i] + R108[i] + R109[i]+R110[i] + R111[i]+ R112[i] + R113[i] + R114[i]+R115[i] + R116[i]
+    W48.append(concatenated_row)
+##########
+#weight matrix for fourty-ninth layer/fourty-eighth hidden layer")
+# print(W48)
+#####################
+# #Bias matrix for fourty-ninth layer/fourty-eighth hidden layer
+
+B48 = []
+                     
+# bias matrix for Lambda 1
+
+for i in range(1, 2*n+2):
+          temp_row = []
+          for k in range(1):
+              w = -2*d
+              temp_row.append(w)
+          B48.append(temp_row)
+
+# bias matrix for varpi 1
+
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1):
+              w = j-1
+              temp_row.append(w)
+          B48.append(temp_row)
+
+# bias matrix for varpi 2
+
+for j in range(1, d+1):
+          temp_row = []
+          for k in range(1):
+              w = 2*d-j+1
+              temp_row.append(w)
+          B48.append(temp_row)
+           
+# bias matrix for x4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=0
+        temp_row.append(w)
+    B48.append(temp_row) 
+           
+# bias matrix for x'4_j
+
+for j in range(1, d+1):   
+    temp_row=[]
+    for i in range(1):
+        w=m
+        temp_row.append(w)
+    B48.append(temp_row)    
+# #####################       
+# print('Printing B48')
+# for i in B48:
+#     print(i)
+##################################
+L48 = []  # Lambda 1, varpi 1, varpi 2, x'_4 nodes
+for i in range(len(W48)):
+    temp_row = []
+    L48_i_entry = np.maximum((np.dot(W48[i], L47)+B48[i]), 0)
+    L48.append(L48_i_entry)
+##################################
+# print('Printing Lambda 1, varpi 1, varpi 2, x_4 prime nodes for fourty-ninth layer/fourty-eighth hidden layer')
+# for i in L48:
+#     print(i)
+#######################
+u = len(L48) // 3  # To print first 2d values of L48 that showes the required indices where insertion is required. 
+
+# Slicing to get the middle 2d values, ignoring the first 2n+1 and the last 2d
+middle_2d_values = L48[2*n+1 : -2*d]
+new_values = [int(array[0]) for array in middle_2d_values]    
+
+# print("Indices of new insertions in resultant/required Euler string:", new_values)
+# print("Indices of new insertions in resultant/required Euler string:", middle_2d_values)
+
+#######################
+# To construct weight matrix for fiftieth layer/fourty-ninth hidden layer is L49=W49*L48+B49
+W49= []
+
+# Lambda 2 nodes (gives the new indices of already existing /old values)
+R117= []
+for i in range(1, 2*n+1):
+          temp_row = []
+          for l in range(1, 2*n+2):# Lambda 1
+                    w = 0 
+                    if l<=i:
+                        w=1
+                    temp_row.append(w)
+          R117.append(temp_row)
+##########
+R118= []
+for i in range(1, 2*n+1):
+          temp_row = []
+          for l in range(1, d+1):# varpi 1 
+                    w = 0 
+                    temp_row.append(w)
+          R118.append(temp_row)
+##########
+R119= []
+for i in range(1, 2*n+1):
+          temp_row = []
+          for l in range(1, d+1):# varpi 2
+                    w = 0 
+                    temp_row.append(w)
+          R119.append(temp_row)
+##########
+R120= []
+for i in range(1, 2*n+1):
+          temp_row = []
+          for l in range(1, d+1):# x4
+                    w = 0 
+                    temp_row.append(w)
+          R120.append(temp_row)
+##########
+R121= []
+for i in range(1, 2*n+1):
+          temp_row = []
+          for l in range(1, d+1):# x4 prime
+                    w = 0 
+                    temp_row.append(w)
+          R121.append(temp_row)    
+##########
+for i in range(len(R117)):
+    concatenated_row = R117[i] + R118[i] + R119[i] + R120[i]+R121[i] 
+    W49.append(concatenated_row)
+##########
+# varpi 3 nodes 
+R122= []
+for k in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*n+2):# Lambda 1
+                    w = 0 
+                    temp_row.append(w)
+          R122.append(temp_row)
+##########
+R123= []
+for k in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, d+1):# varpi 1 
+                    w = 0 
+                    if l==k:
+                        w=1 
+                    temp_row.append(w)
+          R123.append(temp_row)
+##########
+R124= []
+for k in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, d+1):# varpi 2
+                    w = 0 
+                    if l==k-d:
+                        w=1 
+                    temp_row.append(w)
+          R124.append(temp_row)
+##########
+R125= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, d+1):# x4
+                    w = 0 
+                    temp_row.append(w)
+          R125.append(temp_row)
+##########
+R126= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, d+1):# x4 prime
+                    w = 0 
+                    temp_row.append(w)
+          R126.append(temp_row)    
+##########
+for i in range(len(R122)):
+    concatenated_row = R122[i] + R123[i] + R124[i] + R125[i]+R126[i] 
+    W49.append(concatenated_row)
+##########
+# varpi 4 nodes 
+R127= []
+for k in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*n+2):# Lambda 1
+                    w = 0 
+                    temp_row.append(w)
+          R127.append(temp_row)
+##########
+R128= []
+for k in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, d+1):# varpi 1 
+                    w = 0 
+                    temp_row.append(w)
+          R128.append(temp_row)
+##########
+R129= []
+for k in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, d+1):# varpi 2
+                    w = 0 
+                    temp_row.append(w)
+          R129.append(temp_row)
+##########
+R130= []
+for k in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, d+1):# x4
+                    w = 0 
+                    if l==k:
+                        w=1 
+                    temp_row.append(w)
+          R130.append(temp_row)
+##########
+R131= []
+for k in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, d+1):# x4 prime
+                    w = 0 
+                    if l+d==k:
+                        w=1 
+                    temp_row.append(w)
+          R131.append(temp_row)    
+##########
+for i in range(len(R127)):
+    concatenated_row = R127[i] + R128[i] + R129[i] + R130[i]+R131[i] 
+    W49.append(concatenated_row)
+##########
+#weight matrix for fiftieth layer/fourty-ninth hidden layer")
+# print(W49)
+#####################
+#Bias matrix for fiftieth layer/fourty-ninth hidden layer
+
+B49 = []
+                     
+# bias matrix for Lambda 2
+
+for i in range(1, 2*n+1):
+          temp_row = []
+          for k in range(1):
+              w = i
+              temp_row.append(w)
+          B49.append(temp_row)
+
+# bias matrix for varpi 3
+
+for j in range(1, 2*d+1):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              temp_row.append(w)
+          B49.append(temp_row)
+
+# bias matrix for varpi 4
+
+for j in range(1, 2*d+1):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              temp_row.append(w)
+          B49.append(temp_row)    
+# #####################       
+# print('Printing B49')
+# for i in B49:
+#     print(i)
+##################################
+L49 = []  # Lambda 2, varpi 3, varpi 4 nodes
+for i in range(len(W49)):
+    temp_row = []
+    L49_i_entry = np.maximum((np.dot(W49[i], L48)+B49[i]), 0)
+    L49.append(L49_i_entry)
+##################################
+# print('Printing Lambda 2, varpi 3, varpi 4  nodes for fiftieth layer/fourty-ninth hidden layer')
+# for i in L49:
+#     print(i)
+#####################
+# To construct weight matrix for fifth-one layer/fiftieth hidden layer is L50=W50*L49+B50
+W50= []
+
+# varpi 3 nodes as identity map
+R132= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*n+1):# Lambda 2
+                    w = 0 
+                    temp_row.append(w)
+          R132.append(temp_row)
+##########
+R133= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 3 
+                    w = 0 
+                    if i==l:
+                        w=1
+                    temp_row.append(w)
+          R133.append(temp_row)
+##########
+R134= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 4
+                    w = 0 
+                    temp_row.append(w)
+          R134.append(temp_row)    
+##########
+for i in range(len(R132)):
+    concatenated_row = R132[i] + R133[i]+R134[i] 
+    W50.append(concatenated_row)
+##########
+# varpi 4 nodes as identity map
+R135= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*n+1):# Lambda 2
+                    w = 0 
+                    temp_row.append(w)
+          R135.append(temp_row)
+##########
+R136= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 3 
+                    w = 0 
+                    temp_row.append(w)
+          R136.append(temp_row)
+##########
+R137= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 4
+                    w = 0 
+                    if i==l:
+                        w=1
+                    temp_row.append(w)
+          R137.append(temp_row)    
+##########
+for i in range(len(R135)):
+    concatenated_row = R135[i] + R136[i]+R137[i] 
+    W50.append(concatenated_row)
+##########
+# Sigma 51,52 nodes
+R138= []
+for i in range(1, 2*n+1):
+    for k in range(1, 2*d+2):
+        for q in range(2):
+          temp_row = []
+          for l in range(1, 2*n+1):# Lambda 2
+                    w = 0 
+                    if i==l:
+                        w=1/eps
+                    temp_row.append(w)
+          R138.append(temp_row)
+##########
+R139= []
+for i in range(1, 2*n+1):
+    for k in range(1, 2*d+2):
+        for q in range(2):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 3 
+                    w = 0 
+                    temp_row.append(w)
+          R139.append(temp_row)
+##########
+R140= []
+for i in range(1, 2*n+1):
+    for k in range(1, 2*d+2):
+        for q in range(2):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 4
+                    w = 0 
+                    temp_row.append(w)
+          R140.append(temp_row)    
+##########
+for i in range(len(R138)):
+    concatenated_row = R138[i] + R139[i]+R140[i] 
+    W50.append(concatenated_row)
+##########
+# Xi 51,52 nodes
+R141= []
+for i in range(1, 2*n+1):
+    for k in range(1, 2*d+2):
+        for q in range(2):
+          temp_row = []
+          for l in range(1, 2*n+1):# Lambda 2
+                    w = 0 
+                    if i==l:
+                        w=-1/eps
+                    temp_row.append(w)
+          R141.append(temp_row)
+##########
+R142= []
+for i in range(1, 2*n+1):
+    for k in range(1, 2*d+2):
+        for q in range(2):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 3 
+                    w = 0 
+                    temp_row.append(w)
+          R142.append(temp_row)
+##########
+R143= []
+for i in range(1, 2*n+1):
+    for k in range(1, 2*d+2):
+        for q in range(2):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 4
+                    w = 0 
+                    temp_row.append(w)
+          R143.append(temp_row)    
+##########
+for i in range(len(R141)):
+    concatenated_row = R141[i] + R142[i] + R143[i] 
+    W50.append(concatenated_row)
+##########
+# Sigma 61,62 nodes
+R144= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(1, 2*n+1):# Lambda 2
+                    w = 0 
+                    temp_row.append(w)
+          R144.append(temp_row)
+##########
+R145= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 3 
+                    w = 0 
+                    if k==l and k!=r:
+                        w=1/eps
+                    if r==l and k!=r:
+                        w=-1/eps    
+                    temp_row.append(w)
+          R145.append(temp_row)
+##########
+R146= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 4
+                    w = 0 
+                    temp_row.append(w)
+          R146.append(temp_row)    
+##########
+for i in range(len(R144)):
+    concatenated_row = R144[i] + R145[i]+R146[i] 
+    W50.append(concatenated_row)
+##########
+# Xi 61,62 nodes
+R147= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(1, 2*n+1):# Lambda 2
+                    w = 0 
+                    temp_row.append(w)
+          R147.append(temp_row)
+##########
+R148= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 3 
+                    w = 0 
+                    if k==l and k!=r:
+                        w=-1/eps
+                    if r==l and k!=r:
+                        w=1/eps    
+                    temp_row.append(w)
+          R148.append(temp_row)
+##########
+R149= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 4
+                    w = 0 
+                    temp_row.append(w)
+          R149.append(temp_row)    
+##########
+for i in range(len(R147)):
+    concatenated_row = R147[i] + R148[i]+R149[i] 
+    W50.append(concatenated_row)
+##########
+#weight matrix for fifth-one layer/fiftieth hidden layer")
+# print(W50)
+#####################
+# #Bias matrix for fifth-one layer/fiftieth hidden layer
+
+B50 = []
+                     
+# bias matrix for varpi 3
+
+for j in range(1, 2*d+1):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              temp_row.append(w)
+          B50.append(temp_row)
+
+# bias matrix for varpi 4
+
+for j in range(1, 2*d+1):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              temp_row.append(w)
+          B50.append(temp_row)
+          
+# bias matrix for Sigma 51,52
+
+for i in range(1, 2*n+1):
+    for k in range(1, 2*d+2):
+        for q in range(2):
+          temp_row = []
+          for l in range(1):
+              w = 0
+              if q==0:
+                  w=(-(i+k-1)/eps)+1
+              else:
+                  w=-(i+k-1)/eps
+              temp_row.append(w)
+          B50.append(temp_row) 
+          
+# bias matrix for Xi 51,52
+
+for i in range(1, 2*n+1):
+    for k in range(1, 2*d+2):
+        for q in range(2):
+          temp_row = []
+          for l in range(1):
+              w = 0
+              if q==0:
+                  w=((i+k-1)/eps)+1
+              else:
+                  w=(i+k-1)/eps
+              temp_row.append(w)
+          B50.append(temp_row)  
+          
+# bias matrix for Sigma 61,62
+
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(1):
+              w = 0
+              if q==0:
+                  w=1
+              temp_row.append(w)
+          B50.append(temp_row) 
+          
+# bias matrix for Xi 61,62
+
+for i in range(1, 2*d+1):
+    for k in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(1):
+              w = 0
+              if q==0:
+                  w=1
+              temp_row.append(w)
+          B50.append(temp_row)           
+# #####################       
+# print('Printing B50')
+# for i in B50:
+#     print(i)
+##################################
+L50 = []  # Sigma 51,52, Xi 51,52, Sigma 61,62, Xi 61,62
+for i in range(len(W50)):
+    temp_row = []
+    L50_i_entry = np.maximum((np.dot(W50[i], L49)+B50[i]), 0)
+    L50.append(L50_i_entry)
+##################################
+# print('Printing Sigma 51,52, Xi 51,52, Sigma 61,62, Xi 61,62 nodes for fifth-one layer/fiftieth hidden layer')
+# for i in L50:
+#     print(i)
+#####################
+# To construct weight matrix for fifty-two layer/fifty-one hidden layer is L51=W51*L50+B51
+W51= []
+
+# varpi 3 nodes as identity map
+R150= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 3 
+                    w = 0 
+                    if i==l:
+                        w=1
+                    temp_row.append(w)
+          R150.append(temp_row)
+##########
+R151= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 4
+                    w = 0 
+                    temp_row.append(w)
+          R151.append(temp_row)    
+##########
+R152= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*n+1):# Sigma 51,52
+              for k in range(1, 2*d+2):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R152.append(temp_row)
+##########
+R153= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*n+1):# Xi 51,52
+              for k in range(1, 2*d+2):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R153.append(temp_row)
+########## 
+R154= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for k in range(1, 2*d+1):# Sigma 61,62
+              for r in range(1, 2*d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R154.append(temp_row)
+##########
+R155= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for k in range(1, 2*d+1):# Xi 61,62
+              for r in range(1, 2*d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R155.append(temp_row)
+##########         
+for i in range(len(R150)):
+    concatenated_row = R150[i] + R151[i] + R152[i] + R153[i] + R154[i] + R155[i] 
+    W51.append(concatenated_row)
+##########
+# varpi 4 nodes as identity map
+R156= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 3 
+                    w = 0 
+                    temp_row.append(w)
+          R156.append(temp_row)
+##########
+R157= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 4
+                    w = 0 
+                    if i==l:
+                        w=1
+                    temp_row.append(w)
+          R157.append(temp_row)    
+##########
+R158= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*n+1):# Sigma 51,52
+              for k in range(1, 2*d+2):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R158.append(temp_row)
+##########
+R159= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*n+1):# Xi 51,52
+              for k in range(1, 2*d+2):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R159.append(temp_row)
+########## 
+R160= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for k in range(1, 2*d+1):# Sigma 61,62
+              for r in range(1, 2*d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R160.append(temp_row)
+##########
+R161= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for k in range(1, 2*d+1):# Xi 61,62
+              for r in range(1, 2*d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R161.append(temp_row)
+##########         
+for i in range(len(R156)):
+    concatenated_row = R156[i] + R157[i] + R158[i] + R159[i] + R160[i] + R161[i] 
+    W51.append(concatenated_row)
+##########
+# varpi 5 nodes 
+R162= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 3 
+                    w = 0 
+                    temp_row.append(w)
+          R162.append(temp_row)
+##########
+R163= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 4
+                    w = 0 
+                    temp_row.append(w)
+          R163.append(temp_row)    
+##########
+R164= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*n+1):# Sigma 51,52
+              for k in range(1, 2*d+2):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R164.append(temp_row)
+##########
+R165= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*n+1):# Xi 51,52
+              for k in range(1, 2*d+2):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R165.append(temp_row)
+########## 
+R166= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for k in range(1, 2*d+1):# Sigma 61,62
+              for r in range(1, 2*d+1):
+                  for q in range(2):
+                    w = 0 
+                    if i==k and r<k:
+                        if q==0:
+                            w=1
+                        else:
+                            w=-1
+                    temp_row.append(w)
+          R166.append(temp_row)
+##########
+R167= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for k in range(1, 2*d+1):# Xi 61,62
+              for r in range(1, 2*d+1):
+                  for q in range(2):
+                    w = 0 
+                    if i==k and r>=k:
+                        if q==0:
+                            w=-1
+                        else:
+                            w=1
+                    temp_row.append(w)
+          R167.append(temp_row)
+##########         
+for i in range(len(R162)):
+    concatenated_row = R162[i] + R163[i] + R164[i] + R165[i] + R166[i] + R167[i] 
+    W51.append(concatenated_row)
+##########
+# Lambda 3 nodes 
+R168= []
+for i in range(1, 2*n+1):
+    for k in range(1, 2*d+2):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 3 
+                    w = 0 
+                    temp_row.append(w)
+          R168.append(temp_row)
+##########
+R169= []
+for i in range(1, 2*n+1):
+    for k in range(1, 2*d+2):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 4
+                    w = 0 
+                    temp_row.append(w)
+          R169.append(temp_row)    
+##########
+R170= []
+for i in range(1, 2*n+1):
+    for k in range(1, 2*d+2):
+          temp_row = []
+          for l in range(1, 2*n+1):# Sigma 51,52
+              for j in range(1, 2*d+2):
+                  for q in range(2):
+                    w = 0 
+                    if i==l and k==j:
+                        if q==0:
+                            w=C
+                        else:
+                              w=-C
+                    temp_row.append(w)
+          R170.append(temp_row)
+##########
+R171= []
+for i in range(1, 2*n+1):
+    for k in range(1, 2*d+2):
+          temp_row = []
+          for l in range(1, 2*n+1):# Xi 51,52
+              for j in range(1, 2*d+2):
+                  for q in range(2):
+                    w = 0 
+                    if i==l and k==j:
+                        if q==0:
+                            w=C
+                        else:
+                              w=-C
+                    temp_row.append(w)
+          R171.append(temp_row)
+########## 
+R172= []
+for i in range(1, 2*n+1):
+    for k in range(1, 2*d+2):
+          temp_row = []
+          for l in range(1, 2*d+1):# Sigma 61,62
+              for r in range(1, 2*d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R172.append(temp_row)
+##########
+R173= []
+for i in range(1, 2*n+1):
+    for k in range(1, 2*d+2):
+          temp_row = []
+          for l in range(1, 2*d+1):# Xi 61,62
+              for r in range(1, 2*d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R173.append(temp_row)
+##########         
+for i in range(len(R168)):
+    concatenated_row = R168[i] + R169[i] + R170[i] + R171[i] + R172[i] + R173[i] 
+    W51.append(concatenated_row)
+##########
+#weight matrix for fifty-two layer/fifty-one hidden layer")
+# print(W51)
+#####################
+# #Bias matrix for fifty-two layer/fifty-one hidden layer
+
+B51 = []
+                     
+# bias matrix for varpi 3
+
+for j in range(1, 2*d+1):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              temp_row.append(w)
+          B51.append(temp_row)
+
+# bias matrix for varpi 4
+
+for j in range(1, 2*d+1):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              temp_row.append(w)
+          B51.append(temp_row)
+          
+# bias matrix for varpi 5
+
+for k in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1):
+              w = 2*d-k+1
+              temp_row.append(w)
+          B51.append(temp_row) 
+          
+          
+# bias matrix for Lambda 3
+
+for i in range(1, 2*n+1):
+    for k in range(1, 2*d+2):
+          temp_row = []
+          for j in range(1):
+              w = -2*C+t[i-1]
+              temp_row.append(w)
+          B51.append(temp_row) 
+                     
+# #####################       
+# print('Printing B51')
+# for i in B51:
+#     print(i)
+##################################
+L51 = []  # varpi 5, Lambda 3
+for i in range(len(W51)):
+    temp_row = []
+    L51_i_entry = np.maximum((np.dot(W51[i], L50)+B51[i]), 0)
+    L51.append(L51_i_entry)
+##################################
+# print('Printing varpi 5, Lambda 3 nodes for fifty-two layer/fifty-one hidden layer')
+# for i in L51:
+#     print(i)
+#####################
+# To construct weight matrix for fifty-three layer/fifty-two hidden layer is L52=W52*L51+B52
+W52= []
+
+# varpi 3 nodes as identity map
+R174= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 3 
+                    w = 0 
+                    if i==l:
+                        w=1
+                    temp_row.append(w)
+          R174.append(temp_row)
+##########
+R175= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 4
+                    w = 0 
+                    temp_row.append(w)
+          R175.append(temp_row)    
+##########
+R176= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 5
+                    w = 0 
+                    temp_row.append(w)
+          R176.append(temp_row)    
+##########
+R177= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*n+1):# Lambda 3
+              for k in range(1, 2*d+2):
+                    w = 0 
+                    temp_row.append(w)
+          R177.append(temp_row)
+##########         
+for i in range(len(R174)):
+    concatenated_row = R174[i] + R175[i] + R176[i] + R177[i] 
+    W52.append(concatenated_row)
+##########
+# varpi 4 nodes as identity map
+R178= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 3 
+                    w = 0 
+                    temp_row.append(w)
+          R178.append(temp_row)
+##########
+R179= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 4
+                    w = 0 
+                    if i==l:
+                        w=1
+                    temp_row.append(w)
+          R179.append(temp_row)    
+R180= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 5
+                    w = 0 
+                    temp_row.append(w)
+          R180.append(temp_row)    
+##########
+R181= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*n+1):# Lambda 3
+              for k in range(1, 2*d+2):
+                    w = 0 
+                    temp_row.append(w)
+          R181.append(temp_row)
+##########         
+for i in range(len(R178)):
+    concatenated_row = R178[i] + R179[i] + R180[i] + R181[i] 
+    W52.append(concatenated_row)
+##########
+# Sigma 71,72
+R182= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 3 
+                    w = 0 
+                    temp_row.append(w)
+          R182.append(temp_row)
+##########
+R183= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 4
+                    w = 0 
+                    temp_row.append(w)
+          R183.append(temp_row)    
+R184= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 5
+                    w = 0 
+                    if r==l:
+                        w=-1/eps
+                    temp_row.append(w)
+          R184.append(temp_row)    
+##########
+R185= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(1, 2*n+1):# Lambda 3
+              for j in range(1, 2*d+2):
+                    w = 0 
+                    temp_row.append(w)
+          R185.append(temp_row)
+##########         
+for i in range(len(R182)):
+    concatenated_row = R182[i] + R183[i] + R184[i] + R185[i] 
+    W52.append(concatenated_row)
+##########
+# Xi 71,72
+R186= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 3 
+                    w = 0 
+                    temp_row.append(w)
+          R186.append(temp_row)
+##########
+R187= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 4
+                    w = 0 
+                    temp_row.append(w)
+          R187.append(temp_row)    
+R188= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 5
+                    w = 0 
+                    if r==l:
+                        w=1/eps
+                    temp_row.append(w)
+          R188.append(temp_row)    
+##########
+R189= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(1, 2*n+1):# Lambda 3
+              for j in range(1, 2*d+2):
+                    w = 0 
+                    temp_row.append(w)
+          R189.append(temp_row)
+##########         
+for i in range(len(R186)):
+    concatenated_row = R186[i] + R187[i] + R188[i] + R189[i] 
+    W52.append(concatenated_row)
+##########
+# Omega 1
+R190= []
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 3 
+                    w = 0 
+                    temp_row.append(w)
+          R190.append(temp_row)
+##########
+R191= []
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 4
+                    w = 0 
+                    temp_row.append(w)
+          R191.append(temp_row)    
+R192= []
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 5
+                    w = 0 
+                    temp_row.append(w)
+          R192.append(temp_row)    
+##########
+R193= []
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for i in range(1, 2*n+1):# Lambda 3
+              for k in range(1, 2*d+2):
+                    w = 0 
+                    if h==i+k-1:
+                        w=1
+                    temp_row.append(w)
+          R193.append(temp_row)
+##########         
+for i in range(len(R190)):
+    concatenated_row = R190[i] + R191[i] + R192[i] + R193[i] 
+    W52.append(concatenated_row)
+##########
+#weight matrix for fifty-three layer/fifty-two hidden layer")
+# print(W52)
+#####################
+# #Bias matrix for fifty-three layer/fifty-two hidden layer
+
+B52 = []
+                     
+# bias matrix for varpi 3
+
+for j in range(1, 2*d+1):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              temp_row.append(w)
+          B52.append(temp_row)
+
+# bias matrix for varpi 4
+
+for j in range(1, 2*d+1):
+          temp_row = []
+          for k in range(1):
+              w = 0
+              temp_row.append(w)
+          B52.append(temp_row)
+          
+# bias matrix for Sigma 71,72
+
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              if q==0:
+                  w=((k-1)/eps)+1
+              else:
+                  w=(k-1)/eps
+              temp_row.append(w)
+          B52.append(temp_row) 
+          
+# bias matrix for Xi 71,72
+
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              if q==0:
+                  w=((-k+1)/eps)+1
+              else:
+                  w=(-k+1)/eps
+              temp_row.append(w)
+          B52.append(temp_row)           
+          
+# bias matrix for Omega 1
+
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for j in range(1):
+              w = 0
+              temp_row.append(w)
+          B52.append(temp_row) 
+                     
+# #####################       
+# print('Printing B52')
+# for i in B52:
+#     print(i)
+##################################
+L52 = []  # Sigma 71,72, Xi 71,72, Omega 1 nodes
+for i in range(len(W52)):
+    temp_row = []
+    L52_i_entry = np.maximum((np.dot(W52[i], L51)+B52[i]), 0)
+    L52.append(L52_i_entry)
+##################################
+# print('Printing Sigma 71,72, Xi 71,72, Omega 1 nodes for fifty-three layer/fifty-two hidden layer')
+# for i in L52:
+#     print(i)
+#####################
+# To construct weight matrix for fifty-four layer/fifty-three hidden layer is L53=W53*L52+B53
+W53= []
+
+# varpi 6
+R194= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 3 
+                    w = 0 
+                    if r==l:
+                        w=1
+                    temp_row.append(w)
+          R194.append(temp_row)
+##########
+R195= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 4
+                    w = 0 
+                    temp_row.append(w)
+          R195.append(temp_row)
+##########          
+R196= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+          temp_row = []
+          for j in range(1, 2*d+1):# Omega 71,72
+              for i in range(1, 2*d+1):
+                  for q in range(2):
+                    w = 0
+                    if k==j and r==i:
+                        if q==0:
+                          w=C
+                        else:
+                            w=-C 
+                    temp_row.append(w)
+          R196.append(temp_row)    
+##########
+R197= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+          temp_row = []
+          for j in range(1, 2*d+1):# Xi 71,72
+              for i in range(1, 2*d+1):
+                  for q in range(2):
+                    w = 0 
+                    if k==j and r==i:
+                        if q==0:
+                          w=C
+                        else:
+                            w=-C
+                    temp_row.append(w)
+          R197.append(temp_row)    
+##########
+R198= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+          temp_row = []
+          for s in range(1, 2*n+2*d+1):
+                    w = 0 
+                    temp_row.append(w)
+          R198.append(temp_row)
+##########                   
+for i in range(len(R194)):
+    concatenated_row = R194[i] + R195[i] + R196[i] + R197[i] + R198[i] 
+    W53.append(concatenated_row)
+##########
+# varpi 7
+R199= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 3 
+                    w = 0 
+                    temp_row.append(w)
+          R199.append(temp_row)
+##########
+R200= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 4
+                    w = 0 
+                    if r==l:
+                        w=1
+                    temp_row.append(w)
+          R200.append(temp_row)
+##########          
+R201= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+          temp_row = []
+          for j in range(1, 2*d+1):# Omega 71,72
+              for i in range(1, 2*d+1):
+                  for q in range(2):
+                    w = 0 
+                    if k==j and r==i:
+                        if q==0:
+                          w=C
+                        else:
+                            w=-C
+                    temp_row.append(w)
+          R201.append(temp_row)    
+##########
+R202= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+          temp_row = []
+          for j in range(1, 2*d+1):# Xi 71,72
+              for i in range(1, 2*d+1):
+                  for q in range(2):
+                    w = 0
+                    if k==j and r==i:
+                        if q==0:
+                          w=C
+                        else:
+                            w=-C 
+                    temp_row.append(w)
+          R202.append(temp_row)    
+##########
+R203= []
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+          temp_row = []
+          for s in range(1, 2*n+2*d+1):
+                    w = 0 
+                    temp_row.append(w)
+          R203.append(temp_row)
+##########          
+for i in range(len(R199)):
+    concatenated_row = R199[i] +R200[i] + R201[i] + R202[i] + R203[i] 
+    W53.append(concatenated_row)
+##########
+# Omega 1 as identity map
+R204= []
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 3 
+                    w = 0 
+                    temp_row.append(w)
+          R204.append(temp_row)
+##########
+R205= []
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for l in range(1, 2*d+1):# varpi 4
+                    w = 0 
+                    temp_row.append(w)
+          R205.append(temp_row)
+##########          
+R206= []
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for k in range(1, 2*d+1):# Omega 71,72
+              for r in range(1, 2*d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R206.append(temp_row)    
+##########
+R207= []
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for k in range(1, 2*d+1):# Xi 71,72
+              for r in range(1, 2*d+1):
+                  for q in range(2):
+                    w = 0 
+                    temp_row.append(w)
+          R207.append(temp_row)    
+##########
+R208= []
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for s in range(1, 2*n+2*d+1):
+                    w = 0 
+                    if h==s:
+                        w=1
+                    temp_row.append(w)
+          R208.append(temp_row)
+##########         
+for i in range(len(R204)):
+    concatenated_row = R204[i] + R205[i] + R206[i] + R207[i]  + R208[i]  
+    W53.append(concatenated_row)
+##########
+#weight matrix for fifty-four layer/fifty-three hidden layer")
+# print(W53)
+#####################
+# #Bias matrix for fifty-four layer/fifty-three hidden layer
+
+B53 = []
+                              
+# bias matrix for varpi 6
+
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+          temp_row = []
+          for i in range(1):
+              w = -2*C
+              temp_row.append(w)
+          B53.append(temp_row)           
+          
+# bias matrix for varpi 7
+
+for k in range(1, 2*d+1):
+    for r in range(1, 2*d+1):
+          temp_row = []
+          for i in range(1):
+              w = -2*C
+              temp_row.append(w)
+          B53.append(temp_row)
+          
+# bias matrix for Omega 1
+
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for j in range(1):
+              w = 0
+              temp_row.append(w)
+          B53.append(temp_row) 
+                     
+# #####################       
+# print('Printing B53')
+# for i in B53:
+#     print(i)
+##################################
+L53 = []  # varpi 6, varpi 7 nodes
+for i in range(len(W53)):
+    temp_row = []
+    L53_i_entry = np.maximum((np.dot(W53[i], L52)+B53[i]), 0)
+    L53.append(L53_i_entry)
+##################################
+# print('Printing varpi 6, varpi 7 nodes for fifty-four layer/fifty-three hidden layer')
+# for i in L53:
+#     print(i)
+#####################
+# To construct weight matrix for fifty-five layer/fifty-four hidden layer is L54=W54*L52+B54
+W54= []
+
+# varpi 8
+S1= []  
+for k in range(1, 2*d+1):
+          temp_row = []
+          for j in range(1, 2*d+1):# varpi 6
+              for r in range(1, 2*d+1):
+                    w = 0
+                    if k==j:
+                        w=1 
+                    temp_row.append(w)
+          S1.append(temp_row)    
+##########
+S2= []
+for k in range(1, 2*d+1):
+          temp_row = []
+          for j in range(1, 2*d+1):# varpi 7
+              for r in range(1, 2*d+1):
+                    w = 0 
+                    temp_row.append(w)
+          S2.append(temp_row)    
+##########
+S3= []
+for k in range(1, 2*d+1):
+          temp_row = []
+          for s in range(1, 2*n+2*d+1):
+                    w = 0 
+                    temp_row.append(w)
+          S3.append(temp_row)
+##########                   
+for i in range(len(S1)):
+    concatenated_row = S1[i] + S2[i] + S3[i] 
+    W54.append(concatenated_row)
+##########
+# varpi 9
+S4= []  
+for k in range(1, 2*d+1):
+          temp_row = []
+          for j in range(1, 2*d+1):# varpi 6
+              for r in range(1, 2*d+1):
+                    w = 0
+                    temp_row.append(w)
+          S4.append(temp_row)    
+##########
+S5= []
+for k in range(1, 2*d+1):
+          temp_row = []
+          for j in range(1, 2*d+1):# varpi 7
+              for r in range(1, 2*d+1):
+                    w = 0 
+                    if k==j:
+                        w=1
+                    temp_row.append(w)
+          S5.append(temp_row)    
+##########
+S6= []
+for k in range(1, 2*d+1):
+          temp_row = []
+          for s in range(1, 2*n+2*d+1):
+                    w = 0 
+                    temp_row.append(w)
+          S6.append(temp_row)
+##########                   
+for i in range(len(S4)):
+    concatenated_row = S4[i] + S5[i] + S6[i] 
+    W54.append(concatenated_row)
+##########
+# Omega 1 as identity map
+S7= []  
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for j in range(1, 2*d+1):# varpi 6
+              for r in range(1, 2*d+1):
+                    w = 0
+                    temp_row.append(w)
+          S7.append(temp_row)    
+##########
+S8= []
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for j in range(1, 2*d+1):# varpi 7
+              for r in range(1, 2*d+1):
+                    w = 0 
+                    temp_row.append(w)
+          S8.append(temp_row)    
+##########
+S9= []
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for s in range(1, 2*n+2*d+1):
+                    w = 0 
+                    if h==s:
+                        w=1
+                    temp_row.append(w)
+          S9.append(temp_row)
+##########                   
+for i in range(len(S7)):
+    concatenated_row = S7[i] + S8[i] + S9[i] 
+    W54.append(concatenated_row)
+##########
+#weight matrix for fifty-five layer/fifty-four hidden layer")
+# print(W54)
+#####################
+# #Bias matrix for fifty-five layer/fifty-four hidden layer
+
+B54 = []
+                              
+# bias matrix for varpi 8
+
+for k in range(1, 2*d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B54.append(temp_row)           
+          
+# bias matrix for varpi 9
+
+for k in range(1, 2*d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B54.append(temp_row)
+          
+# bias matrix for Omega 1
+
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for j in range(1):
+              w = 0
+              temp_row.append(w)
+          B54.append(temp_row) 
+                     
+# #####################       
+# print('Printing B54')
+# for i in B54:
+#     print(i)
+##################################
+L54 = []  # varpi 8, varpi 9 nodes
+for i in range(len(W54)):
+    temp_row = []
+    L54_i_entry = np.maximum((np.dot(W54[i], L53)+B54[i]), 0)
+    L54.append(L54_i_entry)
+##################################
+# print('Printing varpi 8, varpi 9 nodes for fifty-five layer/fifty-four hidden layer')
+# for i in L54:
+#     print(i)
+#####################
+# To construct weight matrix for fifty-sixth layer/fifty-five hidden layer is L55=W55*L54+B55
+W55= []
+
+# Sigma 81,82
+S10= []  
+for i in range(1, 2*n+2):
+    for k in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for j in range(1, 2*d+1):# varpi 8
+                    w = 0
+                    if k==j:
+                        w=1/eps 
+                    temp_row.append(w)
+          S10.append(temp_row)    
+##########
+S11= []
+for i in range(1, 2*n+2):
+    for k in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for j in range(1, 2*d+1):# varpi 9
+                    w = 0 
+                    temp_row.append(w)
+          S11.append(temp_row)    
+##########
+S12= []
+for i in range(1, 2*n+2):
+    for k in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for s in range(1, 2*n+2*d+1):
+                    w = 0 
+                    temp_row.append(w)
+          S12.append(temp_row)
+##########                   
+for i in range(len(S10)):
+    concatenated_row = S10[i] + S11[i] + S12[i] 
+    W55.append(concatenated_row)
+##########
+# Xi 81,82
+S13= []  
+for i in range(1, 2*n+2):
+    for k in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for j in range(1, 2*d+1):# varpi 8
+                    w = 0
+                    if k==j:
+                        w=-1/eps 
+                    temp_row.append(w)
+          S13.append(temp_row)    
+##########
+S14= []
+for i in range(1, 2*n+2):
+    for k in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for j in range(1, 2*d+1):# varpi 9
+                    w = 0 
+                    temp_row.append(w)
+          S14.append(temp_row)    
+##########
+S15= []
+for i in range(1, 2*n+2):
+    for k in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for s in range(1, 2*n+2*d+1):
+                    w = 0 
+                    temp_row.append(w)
+          S15.append(temp_row)
+##########                   
+for i in range(len(S13)):
+    concatenated_row = S13[i] + S14[i] + S15[i] 
+    W55.append(concatenated_row)
+##########
+# varpi 9 as identity mao
+S16= []  
+for i in range(1, 2*d+1):
+          temp_row = []
+          for j in range(1, 2*d+1):# varpi 8
+                    w = 0 
+                    temp_row.append(w)
+          S16.append(temp_row)    
+##########
+S17= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for j in range(1, 2*d+1):# varpi 9
+                    w = 0 
+                    if i==j:
+                        w=1
+                    temp_row.append(w)
+          S17.append(temp_row)    
+##########
+S18= []
+for i in range(1, 2*d+1):
+          temp_row = []
+          for s in range(1, 2*n+2*d+1):
+                    w = 0 
+                    temp_row.append(w)
+          S18.append(temp_row)
+##########                   
+for i in range(len(S16)):
+    concatenated_row = S16[i] + S17[i] + S18[i] 
+    W55.append(concatenated_row)
+##########
+# Omega 1 as identity map
+S19= []  
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for j in range(1, 2*d+1):# varpi 8
+                    w = 0
+                    temp_row.append(w)
+          S19.append(temp_row)    
+##########
+S20= []
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for j in range(1, 2*d+1):# varpi 9
+                    w = 0 
+                    temp_row.append(w)
+          S20.append(temp_row)    
+##########
+S21= []
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for s in range(1, 2*n+2*d+1):
+                    w = 0 
+                    if h==s:
+                        w=1
+                    temp_row.append(w)
+          S21.append(temp_row)
+##########                   
+for i in range(len(S19)):
+    concatenated_row = S19[i] + S20[i] + S21[i] 
+    W55.append(concatenated_row)
+##########
+#weight matrix for fifty-sixth layer/fifty-five hidden layer")
+# print(W55)
+#####################
+# #Bias matrix for fifty-sixth layer/fifty-five hidden layer
+
+B55 = []
+                              
+# bias matrix for Sigma 81,82
+
+for i in range(1, 2*n+2):
+    for k in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(1):
+              w = 0
+              if q==0:
+                  w=1-((i+k-1)/eps)
+              else:
+                  w=-(i+k-1)/eps
+              temp_row.append(w)
+          B55.append(temp_row)           
+
+# bias matrix for Xi 81,82
+
+for i in range(1, 2*n+2):
+    for k in range(1, 2*d+1):
+        for q in range(2):
+          temp_row = []
+          for l in range(1):
+              w = 0
+              if q==0:
+                  w=1+((i+k-1)/eps)
+              else:
+                  w=(i+k-1)/eps
+              temp_row.append(w)
+          B55.append(temp_row)
+          
+# bias matrix for varpi 9
+
+for k in range(1, 2*d+1):
+          temp_row = []
+          for i in range(1):
+              w = 0
+              temp_row.append(w)
+          B55.append(temp_row)
+          
+# bias matrix for Omega 1
+
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for j in range(1):
+              w = 0
+              temp_row.append(w)
+          B55.append(temp_row) 
+                     
+# #####################       
+# print('Printing B55')
+# for i in B55:
+#     print(i)
+##################################
+L55 = []  # Sigma 81,82, Xi 81,82 nodes
+for i in range(len(W55)):
+    temp_row = []
+    L55_i_entry = np.maximum((np.dot(W55[i], L54)+B55[i]), 0)
+    L55.append(L55_i_entry)
+##################################
+# print('Printing Sigma 81,82, Xi 81,82 nodes for fifty-sixth layer/fifty-five hidden layer')
+# for i in L55:
+#     print(i)
+#####################
+# To construct weight matrix for fifty-seventh layer/fifty-sixth hidden layer is L56=W56*L55+B56
+W56= []
+
+# varpi 10
+S22= []  
+for i in range(1, 2*n+2):
+    for k in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*n+2):# Sigma 81,82
+              for j in range(1, 2*d+1):
+                  for q in range(2):
+                    w = 0
+                    if i==l and k==j:
+                      if q==0:
+                        w=C
+                      else:
+                        w=-C
+                    temp_row.append(w)
+          S22.append(temp_row)    
+##########
+S23= []  
+for i in range(1, 2*n+2):
+    for k in range(1, 2*d+1):
+          temp_row = []
+          for l in range(1, 2*n+2):# Xi 81,82
+              for j in range(1, 2*d+1):
+                  for q in range(2):
+                    w = 0
+                    if i==l and k==j:
+                      if q==0:
+                        w=C
+                      else:
+                        w=-C
+                    temp_row.append(w)
+          S23.append(temp_row)    
+##########
+S24= []
+for i in range(1, 2*n+2):
+    for k in range(1, 2*d+1):
+          temp_row = []
+          for j in range(1, 2*d+1):# varpi 9
+                    w = 0 
+                    if j==k:
+                        w=1
+                    temp_row.append(w)
+          S24.append(temp_row)    
+##########
+S25= []
+for i in range(1, 2*n+2):
+    for k in range(1, 2*d+1):
+          temp_row = []
+          for s in range(1, 2*n+2*d+1):
+                    w = 0 
+                    temp_row.append(w)
+          S25.append(temp_row)
+##########                   
+for i in range(len(S22)):
+    concatenated_row = S22[i] + S23[i] + S24[i] + S25[i] 
+    W56.append(concatenated_row)
+##########
+# Omega 1 as identity map
+S26= []  
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for l in range(1, 2*n+2):# Sigma 81,82
+              for j in range(1, 2*d+1):
+                  for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          S26.append(temp_row)    
+##########
+S27= []  
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for l in range(1, 2*n+2):# Xi 81,82
+              for j in range(1, 2*d+1):
+                  for q in range(2):
+                    w = 0
+                    temp_row.append(w)
+          S27.append(temp_row)    
+##########
+S28= []
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for j in range(1, 2*d+1):# varpi 9
+                    w = 0 
+                    temp_row.append(w)
+          S28.append(temp_row)    
+##########
+S29= []
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for s in range(1, 2*n+2*d+1):
+                    w = 0
+                    if h==s:
+                        w=1
+                    temp_row.append(w)
+          S29.append(temp_row)
+##########                   
+for i in range(len(S26)):
+    concatenated_row = S26[i] + S27[i] + S28[i] + S29[i] 
+    W56.append(concatenated_row)
+##########
+#weight matrix for fifty-seventh layer/fifty-sixth hidden layer")
+# print(W56)
+#####################
+# #Bias matrix for fifty-seventh layer/fifty-sixth hidden layer
+
+B56 = []
+                                       
+# bias matrix for varpi 10
+
+for i in range(1, 2*n+2):
+    for k in range(1, 2*d+1):
+          temp_row = []
+          for i in range(1):
+              w = -2*C
+              temp_row.append(w)
+          B56.append(temp_row)
+          
+# bias matrix for Omega 1
+
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for j in range(1):
+              w = 0
+              temp_row.append(w)
+          B56.append(temp_row) 
+                     
+# #####################       
+# print('Printing B56')
+# for i in B56:
+#     print(i)
+##################################
+L56 = []  # varpi 10 nodes
+for i in range(len(W56)):
+    temp_row = []
+    L56_i_entry = np.maximum((np.dot(W56[i], L55)+B56[i]), 0)
+    L56.append(L56_i_entry)
+##################################
+# print('Printing varpi 10 nodes for fifty-seventh layer/fifty-sixth hidden layer')
+# for i in L56:
+#     print(i)
+#####################
+# To construct weight matrix for fifty-eighth layer/fifty-seventh hidden layer is L57=W57*L56+B57
+W57= []
+
+# Omega 2
+S30= []  
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for i in range(1, 2*n+2):# varpi 10
+              for k in range(1, 2*d+1):
+                    w = 0
+                    if h==i+k-1:
+                        w=1
+                    temp_row.append(w)
+          S30.append(temp_row)    
+##########
+S31= []  
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for s in range(1, 2*n+2*d+1):
+                    w = 0 
+                    temp_row.append(w)
+          S31.append(temp_row)
+##########                   
+for i in range(len(S30)):
+    concatenated_row = S30[i] + S31[i]  
+    W57.append(concatenated_row)
+##########
+# Omega 1 as identity map
+S32= []  
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for i in range(1, 2*n+2):# varpi 10
+              for k in range(1, 2*d+1):
+                    w = 0
+                    temp_row.append(w)
+          S32.append(temp_row)    
+##########
+S33= []  
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for s in range(1, 2*n+2*d+1):
+                    w = 0 
+                    if h==s:
+                        w=1
+                    temp_row.append(w)
+          S33.append(temp_row)
+##########                   
+for i in range(len(S32)):
+    concatenated_row = S32[i] + S33[i]  
+    W57.append(concatenated_row)
+##########
+#weight matrix for fifty-eighth layer/fifty-seventh hidden layer")
+# print(W57)
+#####################
+# #Bias matrix for fifty-eighth layer/fifty-seventh hidden layer
+
+B57 = []
+                                       
+# bias matrix for Omega 1
+
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for j in range(1):
+              w = 0
+              temp_row.append(w)
+          B57.append(temp_row)
+          
+# bias matrix for Omega 1
+
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for j in range(1):
+              w = 0
+              temp_row.append(w)
+          B57.append(temp_row) 
+                     
+# #####################       
+# print('Printing B57')
+# for i in B57:
+#     print(i)
+##################################
+L57 = []  # Omega 2 nodes
+for i in range(len(W57)):
+    temp_row = []
+    L57_i_entry = np.maximum((np.dot(W57[i], L56)+B57[i]), 0)
+    L57.append(L57_i_entry)
+##################################
+# print('Printing Omega 2 nodes for fifty-eighth layer/fifty-seventh hidden layer')
+# for i in L57:
+#     print(i)
+#####################
+# To construct weight matrix for fifty-ninth layer/Output layer is L58=W58*L57+B58
+W58= []
+
+S34= []  
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for s in range(1, 2*n+2*d+1):
+                    w = 0
+                    if h==s:
+                        w=1
+                    temp_row.append(w)
+          S34.append(temp_row)    
+##########
+S35= []  
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for s in range(1, 2*n+2*d+1):
+                    w = 0 
+                    if h==s:
+                        w=1
+                    temp_row.append(w)
+          S35.append(temp_row)
+##########                   
+for i in range(len(S34)):
+    concatenated_row = S34[i] + S35[i]  
+    W58.append(concatenated_row)
+##########
+#weight matrix for Output layer")
+# print(W58)
+#####################
+# #Bias matrix for Output layer
+
+B58 = []
+                                      
+for h in range(1, 2*n+2*d+1):
+          temp_row = []
+          for j in range(1):
+              w = 0
+              temp_row.append(w)
+          B58.append(temp_row)
+##################################
+Y = []  # Out Put nodes
+for i in range(len(W58)):
+    temp_row = []
+    Y_i_entry = np.maximum((np.dot(W58[i], L57)+B58[i]), 0)
+    Y.append(Y_i_entry)
+##################################
+# print('Printing Out Put')
+# for i in Y:
+#     print(i)
+#####################
+values = [int(array[0]) for array in Y]    
+
+print("Output:", values)
+#####################
+
+# Create a new list with the required format
+formatted_values = []
+for r in values:
+    if r > m:
+        a = r - m  # calculate the value of 'a' so that r = a + m
+        formatted_values.append( f"{a} + m")
+    else:
+        formatted_values.append(str(r))  # keep the number as-is if r <= m
+
+# Print the formatted output
+print('Required Output Euler String E(U)=')
+print(", ".join(formatted_values))
+#################
